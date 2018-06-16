@@ -110,10 +110,13 @@ lazy val scoverageSettings: Seq[Setting[_]] = Seq(
 
 scalastyleConfig := baseDirectory.value / "project" / "scalastyle-config.xml"
 
-val compileDependencies = Seq(bootstrapPlay25, xmlResolver, customsApiCommon)
+val spikeCompileDependencies = Seq(akkaCluster, akkaClusterTools, akkaClusterSharding, akkaPersistence, akkaMongoPersistence, casbah)
+val spikeTestDependencies = Seq(akkaMultiNodeTestKit)
+
+val compileDependencies = Seq(bootstrapPlay25, xmlResolver, customsApiCommon) ++ spikeCompileDependencies
 
 val testDependencies = Seq(hmrcTest, scalaTest, pegDown,
-  scalaTestPlusPlay, wireMock, mockito, customsApiCommonTests)
+  scalaTestPlusPlay, wireMock, mockito, customsApiCommonTests) ++ spikeTestDependencies
 
 unmanagedResourceDirectories in Compile += baseDirectory.value / "public"
 

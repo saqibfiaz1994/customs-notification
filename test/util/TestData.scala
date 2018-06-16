@@ -27,6 +27,7 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames._
 import uk.gov.hmrc.customs.notification.controllers.CustomMimeType
 import uk.gov.hmrc.customs.notification.domain.{DeclarantCallbackData, Header, PublicNotificationRequest, PublicNotificationRequestBody}
+import uk.gov.hmrc.customs.notification.model.ClientId
 import util.RequestHeaders._
 import util.TestData._
 
@@ -34,6 +35,7 @@ import scala.xml.{Elem, NodeSeq}
 
 object TestData {
 
+  val validClientId: ClientId = "SOME_CLIENT_ID"
   val validConversationId: String = "eaca01f9-ec3b-4ede-b263-61b626dde232"
   val validConversationIdUUID = UUID.fromString(validConversationId)
   val invalidConversationId: String = "I-am-not-a-valid-uuid"

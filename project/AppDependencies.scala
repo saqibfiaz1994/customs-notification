@@ -11,6 +11,9 @@ object AppDependencies {
   private val wireMockVersion = "2.17.0"
   private val customsApiCommonVersion = "1.26.0"
   private val testScope = "test,it"
+  private val akkaVersion = "2.5.13"
+  private val akkaMongoPersistenceVersion = "2.0.10"
+  private val casbahVersion = "3.1.1"
 
   val xmlResolver = "xml-resolver" % "xml-resolver" % "1.2"
 
@@ -32,4 +35,13 @@ object AppDependencies {
 
   val customsApiCommonTests = "uk.gov.hmrc" %% "customs-api-common" % customsApiCommonVersion % testScope classifier "tests"
 
+  val akkaCluster = "com.typesafe.akka" %% "akka-cluster" % akkaVersion
+  val akkaClusterTools = "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion
+  val akkaClusterSharding = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
+  val akkaPersistence = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
+  val akkaMultiNodeTestKit = "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion %testScope
+  // only got success with Casbah, not ReactiveMongo (get not such method error which implies different versions of AKKA on classpath, even after putting excludes for akka)
+  // TODO: use some flavor of ReactiveMongo persistence Journal
+  val akkaMongoPersistence = "com.github.scullxbones" %% "akka-persistence-mongo-casbah" % "2.0.10"
+  val casbah = "org.mongodb" %% "casbah" % "3.1.1"
 }

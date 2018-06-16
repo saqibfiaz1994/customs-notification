@@ -20,4 +20,6 @@ package object model {
 
   type SeqOfHeader = Seq[(String, String)]
 
+  type ClientId = String
+
 }

@@ -56,7 +56,7 @@ class ApiSubscriptionFieldsConnector @Inject()(http: HttpClient,
     }
   }
 
-  private def parseResponseAsModel(jsonResponse: String)(implicit hc: HeaderCarrier) = {
+  private def parseResponseAsModel(jsonResponse: String)(implicit hc: HeaderCarrier): Option[DeclarantCallbackData] = {
     val response = Some(Json.parse(jsonResponse).as[ApiSubscriptionFieldsResponse].fields)
     logger.debug(s"api-subscription-fields service parsed response=$response")
     response
