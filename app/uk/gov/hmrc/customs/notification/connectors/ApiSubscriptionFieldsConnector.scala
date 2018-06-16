@@ -17,6 +17,7 @@
 package uk.gov.hmrc.customs.notification.connectors
 
 import javax.inject.{Inject, Singleton}
+
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE}
 import play.api.http.MimeTypes
 import play.api.libs.json.Json
@@ -24,6 +25,7 @@ import play.mvc.Http.Status._
 import uk.gov.hmrc.customs.api.common.config.ServiceConfigProvider
 import uk.gov.hmrc.customs.notification.domain.{ApiSubscriptionFieldsResponse, DeclarantCallbackData}
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
+import uk.gov.hmrc.customs.notification.model.ClientId
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
@@ -56,10 +58,33 @@ class ApiSubscriptionFieldsConnector @Inject()(http: HttpClient,
     }
   }
 
+  //TODO: merge clientId into DeclarantCallbackData and get in one go
+  def getClientId(fieldsId: String)(implicit hc: HeaderCarrier): Future[Option[ClientId]] = {
+    logger.debug("calling api-subscription-fields service")
+    callApiSubscriptionFields(fieldsId)(hc = hc.copy(extraHeaders = headers)) map { response =>
+      logger.debug(s"api-subscription-fields service response status=${response.status} response body=${response.body}")
+
+      response.status match {
+        case OK => parseResponseAsClientId(response.body)
+        case NOT_FOUND => None
+        case status =>
+          val msg = s"unexpected subscription information service response status=$status"
+          logger.error(msg)
+          throw new IllegalStateException(msg)
+      }
+    }
+  }
+
   private def parseResponseAsModel(jsonResponse: String)(implicit hc: HeaderCarrier): Option[DeclarantCallbackData] = {
     val response = Some(Json.parse(jsonResponse).as[ApiSubscriptionFieldsResponse].fields)
     logger.debug(s"api-subscription-fields service parsed response=$response")
     response
+  }
+
+  private def parseResponseAsClientId(jsonResponse: String)(implicit hc: HeaderCarrier): Option[ClientId] = {
+    val response = Json.parse(jsonResponse).as[ApiSubscriptionFieldsResponse]
+    logger.debug(s"api-subscription-fields service parsed response=$response")
+    Some(response.clientId)
   }
 
   private def callApiSubscriptionFields(fieldsId: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
