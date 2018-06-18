@@ -27,6 +27,7 @@ import com.typesafe.config.Config
 import uk.gov.hmrc.customs.notification.actors.NotificationsActor._
 import uk.gov.hmrc.customs.notification.actors.RootActor.NotificationEnqueuedAck
 import uk.gov.hmrc.customs.notification.actors.model.NotificationCmd
+import uk.gov.hmrc.customs.notification.connectors.PublicNotificationServiceConnector
 import uk.gov.hmrc.customs.notification.domain.PublicNotificationRequest
 import uk.gov.hmrc.customs.notification.model.ClientId
 
@@ -73,11 +74,10 @@ object NotificationsActor {
     override def toString: String = events.reverse.toString
   }
 
-  def props: Props = Props(classOf[NotificationsActor])
+  def props(pushConnector: PublicNotificationServiceConnector): Props = Props(classOf[NotificationsActor], pushConnector)
 }
 
-//TODO: passivate after timeout to preserve resources
-class NotificationsActor() extends PersistentActor with ActorLogging {
+class NotificationsActor(pushConnector: PublicNotificationServiceConnector) extends PersistentActor with ActorLogging {
 
   // self.path.parent.name is the type name (utf-8 URL-encoded)
   // self.path.name is the entry identifier (utf-8 URL-encoded)
@@ -145,7 +145,7 @@ class NotificationsActor() extends PersistentActor with ActorLogging {
   }
 
   def sendNotification(n: PublicNotificationRequest): Unit = {
-    val senderActorRef = context.actorOf(SenderActor.props) // TODO: give a unique name
+    val senderActorRef = context.actorOf(SenderActor.props(pushConnector)) // TODO: give a unique name
     senderActorRef ! SenderActor.SendMsg(notification = n, originalSender = self)
   }
 }

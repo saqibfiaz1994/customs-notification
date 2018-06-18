@@ -19,6 +19,7 @@ package uk.gov.hmrc.customs.notification.actors
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
 import uk.gov.hmrc.customs.notification.actors.NotificationsActor.SendAckCmd
 import uk.gov.hmrc.customs.notification.actors.SenderActor.SendMsg
+import uk.gov.hmrc.customs.notification.connectors.PublicNotificationServiceConnector
 import uk.gov.hmrc.customs.notification.domain.PublicNotificationRequest
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,10 +29,10 @@ object SenderActor {
   //TODO: keep reference to original sender
   case class SendMsg(notification: PublicNotificationRequest, sendCount: Int = 0, originalSender: ActorRef)
 
-  def props: Props = Props(classOf[SenderActor]) //TODO: do we need a pass in a unique name?
+  def props(pushConnector: PublicNotificationServiceConnector): Props = Props(classOf[SenderActor], pushConnector) //TODO: do we need a pass in a unique name?
 }
 
-class SenderActor extends Actor with ActorLogging with DummyConnector {
+class SenderActor(pushConnector: PublicNotificationServiceConnector) extends Actor with ActorLogging {
   var sendCount = 0
 
   override def postStop(): Unit = {
@@ -60,8 +61,8 @@ class SenderActor extends Actor with ActorLogging with DummyConnector {
       log.info(s"PRE sendCount=$sendCount")
       this.sendCount = count + 1
       log.info(s"POST sendCount=$sendCount")
-      dummyPost(notification).map{ _ =>
-        originalSender ! SendAckCmd("TODO: get clientId", notification) //TODO get clientId
+      pushConnector.send(notification).map{ _ =>
+        originalSender ! SendAckCmd(notification.clientSubscriptionId, notification)
         self ! PoisonPill
       }
     }

@@ -21,6 +21,7 @@ import akka.cluster.sharding.ClusterSharding
 import uk.gov.hmrc.customs.notification.actors.NotificationsActor.{EnqueueCmd, QueryNotificationsCmd}
 import uk.gov.hmrc.customs.notification.actors.RootActor.{NotificationsMsg, SendNotificationMsg}
 import uk.gov.hmrc.customs.notification.actors.model.NotificationCmd
+import uk.gov.hmrc.customs.notification.connectors.PublicNotificationServiceConnector
 import uk.gov.hmrc.customs.notification.domain.PublicNotificationRequest
 import uk.gov.hmrc.customs.notification.model.ClientId
 
@@ -29,10 +30,10 @@ object RootActor {
   case class SendNotificationMsg(clientId: ClientId, notification: PublicNotificationRequest) extends NotificationCmd
   case class NotificationsMsg(clientId: ClientId) extends NotificationCmd
 
-  def props: Props = Props(classOf[RootActor]) //TODO: do we need a pass in a unique name?
+  def props(pushConnector: PublicNotificationServiceConnector): Props = Props(classOf[RootActor], pushConnector) //TODO: do we need a pass in a unique name?
 }
 
-class RootActor extends Actor with ActorLogging {
+class RootActor(pushConnector: PublicNotificationServiceConnector) extends Actor with ActorLogging {
 
   val notificationsRegion = ClusterSharding(context.system).shardRegion(NotificationsActor.ShardName)
 
@@ -55,5 +56,5 @@ class RootActor extends Actor with ActorLogging {
     notificationsRegion.forward(msg)
   }
 
-  def entityProps(clientId: String): Props = NotificationsActor.props
+  def entityProps(clientId: String): Props = NotificationsActor.props(pushConnector)
 }
