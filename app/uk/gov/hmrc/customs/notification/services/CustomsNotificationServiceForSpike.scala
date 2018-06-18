@@ -18,13 +18,11 @@ package uk.gov.hmrc.customs.notification.services
 
 import javax.inject.{Inject, Singleton}
 
-import akka.actor.ActorSystem
-import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
+import play.api.Configuration
+import uk.gov.hmrc.customs.notification.actors.AkkaBootstrap
 import uk.gov.hmrc.customs.notification.actors.RootActor.SendNotificationMsg
-import uk.gov.hmrc.customs.notification.actors.{NotificationsActor, RootActor}
 import uk.gov.hmrc.customs.notification.connectors.{GoogleAnalyticsSenderConnector, NotificationQueueConnector, PublicNotificationServiceConnector}
 import uk.gov.hmrc.customs.notification.controllers.RequestMetaData
 import uk.gov.hmrc.customs.notification.domain.{DeclarantCallbackData, PublicNotificationRequest}
@@ -42,22 +40,28 @@ class CustomsNotificationServiceForSpike @Inject()(logger: NotificationLogger,
                                                    publicNotificationRequestService: PublicNotificationRequestService,
                                                    pushConnector: PublicNotificationServiceConnector,
                                                    queueConnector: NotificationQueueConnector,
-                                                   gaConnector: GoogleAnalyticsSenderConnector
+                                                   gaConnector: GoogleAnalyticsSenderConnector,
+                                                   configuration: Configuration,
+                                                   akkaBootstrap: AkkaBootstrap
                                           ) {
 
   // bootstrap akka cluster sharding
   val askTimeout = 10 seconds
-  val port = "2551" //TODO: get from JVM command line arg
-  val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
-    withFallback(ConfigFactory.load())
-  val clusterSystem = ActorSystem("ClusterSystem", config) //TODO: pass in config to constructor
-  ClusterSharding(clusterSystem).start(
-    typeName = NotificationsActor.ShardName,
-    entityProps = NotificationsActor.props(pushConnector),
-    settings = ClusterShardingSettings(clusterSystem),
-    extractEntityId = NotificationsActor.idExtractor,
-    extractShardId = NotificationsActor.shardResolver)
-  val rootActor = clusterSystem.actorOf(RootActor.props(pushConnector), "rootActor")
+  val port: Int = configuration.getInt("shard-node-port").get
+println(s"XXXXXXXXXXXXXXXXXXXXXXXXXX shard-node-port=$port")
+//TODO: remove
+//  private val theConfig = ConfigFactory.load()
+//  //TODO: get from JVM command line arg
+//  val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
+//    withFallback(theConfig)
+//  val clusterSystem = ActorSystem("ClusterSystem", config) //TODO: pass in config to constructor
+//  ClusterSharding(clusterSystem).start(
+//    typeName = NotificationsActor.ShardName,
+//    entityProps = NotificationsActor.props(pushConnector),
+//    settings = ClusterShardingSettings(clusterSystem),
+//    extractEntityId = NotificationsActor.idExtractor,
+//    extractShardId = NotificationsActor.shardResolver)
+//  val rootActor = clusterSystem.actorOf(RootActor.props(pushConnector), "rootActor")
 
   def handleNotification(clientId: ClientId, xml: NodeSeq, callbackDetails: DeclarantCallbackData, metaData: RequestMetaData)(implicit hc: HeaderCarrier): Future[Any] = {
     gaConnector.send("notificationRequestReceived", s"[ConversationId=${metaData.conversationId}] A notification received for delivery")
@@ -66,7 +70,7 @@ class CustomsNotificationServiceForSpike @Inject()(logger: NotificationLogger,
 
     // SendNotificationMsg to root actor
     implicit val timeout: Timeout = Timeout(askTimeout)
-    val f: Future[Any] = rootActor ? SendNotificationMsg(clientId, publicNotificationRequest)
+    val f: Future[Any] = akkaBootstrap.root ? SendNotificationMsg(clientId, publicNotificationRequest)
     f.map(msg => logger.info("Application got acknowledgement " + msg))
 
 //    if (callbackDetails.callbackUrl.isEmpty) {
