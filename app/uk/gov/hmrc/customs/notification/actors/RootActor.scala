@@ -18,6 +18,7 @@ package uk.gov.hmrc.customs.notification.actors
 
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.cluster.sharding.ClusterSharding
+import play.api.libs.json.Json
 import uk.gov.hmrc.customs.notification.actors.NotificationsActor.{EnqueueCmd, QueryNotificationsCmd}
 import uk.gov.hmrc.customs.notification.actors.RootActor.{NotificationsMsg, SendNotificationMsg}
 import uk.gov.hmrc.customs.notification.actors.model.NotificationCmd
@@ -26,6 +27,9 @@ import uk.gov.hmrc.customs.notification.domain.PublicNotificationRequest
 import uk.gov.hmrc.customs.notification.model.ClientId
 
 object RootActor {
+  object NotificationEnqueuedAck {
+    val format = Json.format[NotificationEnqueuedAck]
+  }
   case class NotificationEnqueuedAck(id: String) //TODO: think of a unique id for a notification
   case class SendNotificationMsg(clientId: ClientId, notification: PublicNotificationRequest) extends NotificationCmd
   case class NotificationsMsg(clientId: ClientId) extends NotificationCmd

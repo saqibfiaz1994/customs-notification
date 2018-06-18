@@ -46,9 +46,6 @@ Things I have had to change from vanilla akka solution
 object NotificationsActor {
   val ShardName = "Notifications"
 
-  @deprecated("use ShardRegion entry point instead")
-  def notificationsActorId(clientId: ClientId) = s"NotificationsActor:$clientId"
-
   val idExtractor: ShardRegion.ExtractEntityId = {
     case cmd: NotificationCmd => (cmd.clientId, cmd)
   }
@@ -81,7 +78,11 @@ class NotificationsActor(pushConnector: PublicNotificationServiceConnector) exte
 
   // self.path.parent.name is the type name (utf-8 URL-encoded)
   // self.path.name is the entry identifier (utf-8 URL-encoded)
-  override def persistenceId: String = "Notifications" + "-" + self.path.name
+  override def persistenceId: String = {
+    val id = "NotificationsX" + "-" + self.path.name // resolves to Client ID as AKKA uses idExtractor
+    log.info("persistenceId={}", id)
+    id
+  }
 
   var state = NotificationsState()
 
@@ -120,7 +121,7 @@ class NotificationsActor(pushConnector: PublicNotificationServiceConnector) exte
         log.info(state.toString)
         log.info(s"EnqueueCmd sender().toString() = ${sender().toString()}")
         sendNotification(notification) //TODO: think about doing this in another message handler on a message to self
-        sender() ! NotificationEnqueuedAck("conversationId")  // Note sender() is originating sender. TODO: return some unique id for ACK
+        sender() ! NotificationEnqueuedAck(notification.clientSubscriptionId)  // Note sender() is originating sender. TODO: return some unique id for ACK
       }
     case QueryNotificationsCmd =>
       persist(NotificationsEvt){ event =>
@@ -140,6 +141,16 @@ class NotificationsActor(pushConnector: PublicNotificationServiceConnector) exte
     //Have been idle too long, time to start passivation process
     case ReceiveTimeout =>
       log.info("Notifications entity with id {} is being passivated due to inactivity", persistenceId)
+      /*
+      [ERROR] [06/18/2018 11:41:34.576] [ClusterSystem-akka.actor.default-dispatcher-19] [akka.tcp://ClusterSystem@127.0.0.1:2551/system/sharding/Notifications/55/200b01f9-ec3b-4ede-b263-61b626dde232] Persistence failure when replaying events for persistenceId [Notifications-200b01f9-ec3b-4ede-b263-61b626dde232]. Last known sequence number [0]
+      java.lang.ClassNotFoundException: uk.gov.hmrc.customs.notification.actors.NotificationsActor$EnqueuedEvt
+        at java.net.URLClassLoader.findClass(URLClassLoader.java:381)
+        at java.lang.ClassLoader.loadClass(ClassLoader.java:424)
+      link to akka-persistence-mongo was helpful which pointed another link
+      - https://github.com/scullxbones/akka-persistence-mongo/issues/45
+        - https://stackoverflow.com/questions/24593120/classnotfoundexception-in-play-application-with-typesafe-activator
+      basically you have to start the app in dev mode as `sbt "start 9821"`
+      */
       context.parent ! Passivate(stopMessage = PoisonPill)
     case "print" => println(state)
   }

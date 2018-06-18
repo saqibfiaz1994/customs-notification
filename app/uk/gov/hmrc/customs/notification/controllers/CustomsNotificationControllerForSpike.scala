@@ -71,9 +71,9 @@ class CustomsNotificationControllerForSpike @Inject()(logger: NotificationLogger
       clientId <- callbackDetailsConnector.getClientId(md.clientId)
     } yield (cd, clientId)).flatMap{
       case (Some(callbackData), Some(clientId)) =>
-        customsNotificationService.handleNotification(clientId, xml, callbackData, md).map{ _ =>
-          logger.info("Notification accepted to be delivered")
-          Results.Accepted
+        customsNotificationService.handleNotification(clientId, xml, callbackData, md).map{ ack: Any =>
+          logger.info(s"Notification accepted to be delivered with acknowledgement=$ack")
+          Results.Accepted(ack.toString)
         }
       case _ =>
         logger.error("Declarant data not found")

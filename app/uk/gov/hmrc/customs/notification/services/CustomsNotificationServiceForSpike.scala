@@ -20,9 +20,11 @@ import javax.inject.{Inject, Singleton}
 
 import akka.actor.ActorSystem
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
+import akka.pattern.ask
+import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import play.api.Configuration
-import uk.gov.hmrc.customs.notification.actors.NotificationsActor
+import uk.gov.hmrc.customs.notification.actors.RootActor.SendNotificationMsg
+import uk.gov.hmrc.customs.notification.actors.{NotificationsActor, RootActor}
 import uk.gov.hmrc.customs.notification.connectors.{GoogleAnalyticsSenderConnector, NotificationQueueConnector, PublicNotificationServiceConnector}
 import uk.gov.hmrc.customs.notification.controllers.RequestMetaData
 import uk.gov.hmrc.customs.notification.domain.{DeclarantCallbackData, PublicNotificationRequest}
@@ -32,6 +34,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.xml.NodeSeq
 
 @Singleton
@@ -43,6 +46,7 @@ class CustomsNotificationServiceForSpike @Inject()(logger: NotificationLogger,
                                           ) {
 
   // bootstrap akka cluster sharding
+  val askTimeout = 10 seconds
   val port = "2551" //TODO: get from JVM command line arg
   val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
     withFallback(ConfigFactory.load())
@@ -53,20 +57,24 @@ class CustomsNotificationServiceForSpike @Inject()(logger: NotificationLogger,
     settings = ClusterShardingSettings(clusterSystem),
     extractEntityId = NotificationsActor.idExtractor,
     extractShardId = NotificationsActor.shardResolver)
+  val rootActor = clusterSystem.actorOf(RootActor.props(pushConnector), "rootActor")
 
-  def handleNotification(clientId: ClientId, xml: NodeSeq, callbackDetails: DeclarantCallbackData, metaData: RequestMetaData)(implicit hc: HeaderCarrier): Future[Unit] = {
+  def handleNotification(clientId: ClientId, xml: NodeSeq, callbackDetails: DeclarantCallbackData, metaData: RequestMetaData)(implicit hc: HeaderCarrier): Future[Any] = {
     gaConnector.send("notificationRequestReceived", s"[ConversationId=${metaData.conversationId}] A notification received for delivery")
 
     val publicNotificationRequest = publicNotificationRequestService.createRequest(xml, callbackDetails, metaData)
 
-    // Avinder TODO: send SendNotificationMsg to root actor
+    // SendNotificationMsg to root actor
+    implicit val timeout: Timeout = Timeout(askTimeout)
+    val f: Future[Any] = rootActor ? SendNotificationMsg(clientId, publicNotificationRequest)
+    f.map(msg => logger.info("Application got acknowledgement " + msg))
 
-    if (callbackDetails.callbackUrl.isEmpty) {
-      logger.info("Notification will be enqueued as callbackUrl is empty")
-      passOnToPullQueue(publicNotificationRequest)
-    } else {
-      pushAndThenPassOnToPullIfPushFails(publicNotificationRequest)
-    }
+//    if (callbackDetails.callbackUrl.isEmpty) {
+//      logger.info("Notification will be enqueued as callbackUrl is empty")
+//      passOnToPullQueue(publicNotificationRequest)
+//    } else {
+//      pushAndThenPassOnToPullIfPushFails(publicNotificationRequest)
+//    }
   }
 
 
