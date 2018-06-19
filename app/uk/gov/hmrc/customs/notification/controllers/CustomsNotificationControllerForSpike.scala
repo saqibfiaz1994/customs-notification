@@ -21,7 +21,7 @@ import javax.inject.{Inject, Singleton}
 
 import play.api.mvc._
 import uk.gov.hmrc.customs.api.common.controllers.ErrorResponse
-import uk.gov.hmrc.customs.notification.connectors.ApiSubscriptionFieldsConnector
+import uk.gov.hmrc.customs.notification.connectors.{ApiSubscriptionFieldsConnector, DummySpikeSubscriptionFieldsConnector}
 import uk.gov.hmrc.customs.notification.controllers.CustomErrorResponses.ErrorCdsClientIdNotFound
 import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames._
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
@@ -38,7 +38,7 @@ import scala.xml.NodeSeq
 @Singleton
 class CustomsNotificationControllerForSpike @Inject()(logger: NotificationLogger,
                                                       customsNotificationService: CustomsNotificationServiceForSpike,
-                                                      callbackDetailsConnector: ApiSubscriptionFieldsConnector,
+                                                      callbackDetailsConnector: DummySpikeSubscriptionFieldsConnector,
                                                       configService: ConfigService)
   extends BaseController with HeaderValidator {
 
