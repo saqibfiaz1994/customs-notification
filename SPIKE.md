@@ -83,5 +83,9 @@ Use this rather than default Java serialiser for efficiency and to get rid of wa
 
 This has not been spiked yet.
 
+## Figure out how to use [Multi Note Testing test kit](https://doc.akka.io/docs/akka/2.5/multi-node-testing.html)
+
+[There is an example of this in](https://github.com/typesafehub/activator-akka-cluster-sharding-scala) 
+
 
 
