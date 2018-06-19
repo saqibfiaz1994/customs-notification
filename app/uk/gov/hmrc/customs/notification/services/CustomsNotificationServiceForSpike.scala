@@ -49,19 +49,6 @@ class CustomsNotificationServiceForSpike @Inject()(logger: NotificationLogger,
   val askTimeout = 10 seconds
   val port: Int = configuration.getInt("shard-node-port").get
 println(s"XXXXXXXXXXXXXXXXXXXXXXXXXX shard-node-port=$port")
-//TODO: remove
-//  private val theConfig = ConfigFactory.load()
-//  //TODO: get from JVM command line arg
-//  val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
-//    withFallback(theConfig)
-//  val clusterSystem = ActorSystem("ClusterSystem", config) //TODO: pass in config to constructor
-//  ClusterSharding(clusterSystem).start(
-//    typeName = NotificationsActor.ShardName,
-//    entityProps = NotificationsActor.props(pushConnector),
-//    settings = ClusterShardingSettings(clusterSystem),
-//    extractEntityId = NotificationsActor.idExtractor,
-//    extractShardId = NotificationsActor.shardResolver)
-//  val rootActor = clusterSystem.actorOf(RootActor.props(pushConnector), "rootActor")
 
   def handleNotification(clientId: ClientId, xml: NodeSeq, callbackDetails: DeclarantCallbackData, metaData: RequestMetaData)(implicit hc: HeaderCarrier): Future[Any] = {
     gaConnector.send("notificationRequestReceived", s"[ConversationId=${metaData.conversationId}] A notification received for delivery")

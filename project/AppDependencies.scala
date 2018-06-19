@@ -41,7 +41,7 @@ object AppDependencies {
   val akkaPersistence = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
   val akkaMultiNodeTestKit = "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion %testScope
   // only got success with Casbah, not ReactiveMongo (get not such method error which implies different versions of AKKA on classpath, even after putting excludes for akka)
-  // TODO: use some flavor of ReactiveMongo persistence Journal
   val akkaMongoPersistence = "com.github.scullxbones" %% "akka-persistence-mongo-casbah" % "2.0.10"
+  // TODO: use some flavor of ReactiveMongo persistence Journal
   val casbah = "org.mongodb" %% "casbah" % "3.1.1"
 }

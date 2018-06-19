@@ -26,7 +26,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object SenderActor {
   // Messages
-  //TODO: keep reference to original sender
   case class SendMsg(notification: PublicNotificationRequest, sendCount: Int = 0, originalSender: ActorRef)
 
   def props(pushConnector: PublicNotificationServiceConnector): Props = Props(classOf[SenderActor], pushConnector) //TODO: do we need a pass in a unique name?

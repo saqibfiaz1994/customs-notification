@@ -42,7 +42,7 @@ class AkkaBootstrapImpl @Inject() (
     val theConfig = ConfigFactory.load()
     val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
       withFallback(theConfig)
-    val clusterSystem = ActorSystem("ClusterSystem", config) //TODO: pass in config to constructor
+    val clusterSystem = ActorSystem("ClusterSystem", config)
     ClusterSharding(clusterSystem).start(
       typeName = NotificationsActor.ShardName,
       entityProps = NotificationsActor.props(pushConnector),

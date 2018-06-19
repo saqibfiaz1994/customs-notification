@@ -41,7 +41,6 @@ Things I have had to change from vanilla akka solution
 - root actor gets reference to this entity via `ShardRegion`
 - passivation MSG is sent to special `Shard` supervisor
 */
-//TODO rename to ClientNotificationQueueActor
 object NotificationsActor {
   val ShardName = "Notifications"
 

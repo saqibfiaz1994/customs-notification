@@ -21,7 +21,3 @@ import uk.gov.hmrc.customs.notification.model.ClientId
 trait NotificationCmd {
   val clientId: ClientId
 }
-
-//TODO: replace references to this with PublicNotificationRequest
-//case class Notification(payload: String, url: String)
-

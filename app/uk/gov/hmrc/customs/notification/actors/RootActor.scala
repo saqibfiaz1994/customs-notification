@@ -34,7 +34,7 @@ object RootActor {
   case class SendNotificationMsg(clientId: ClientId, notification: PublicNotificationRequest) extends NotificationCmd
   case class NotificationsMsg(clientId: ClientId) extends NotificationCmd
 
-  def props(pushConnector: PublicNotificationServiceConnector): Props = Props(classOf[RootActor], pushConnector) //TODO: do we need a pass in a unique name?
+  def props(pushConnector: PublicNotificationServiceConnector): Props = Props(classOf[RootActor], pushConnector)
 }
 
 class RootActor(pushConnector: PublicNotificationServiceConnector) extends Actor with ActorLogging {
