@@ -40,7 +40,6 @@ Things I have had to change from vanilla akka solution
 - on ReceiveTimeout we send wrapped msg parent to context.parent ! Passivate(stopMessage = PoisonPill)
 - root actor gets reference to this entity via `ShardRegion`
 - passivation MSG is sent to special `Shard` supervisor
-
 */
 //TODO rename to ClientNotificationQueueActor
 object NotificationsActor {
@@ -79,7 +78,7 @@ class NotificationsActor(pushConnector: PublicNotificationServiceConnector) exte
   // self.path.parent.name is the type name (utf-8 URL-encoded)
   // self.path.name is the entry identifier (utf-8 URL-encoded)
   override def persistenceId: String = {
-    val id = "NotificationsX" + "-" + self.path.name // resolves to Client ID as AKKA uses idExtractor
+    val id = "NotificationsX" + "-" + self.path.name // resolves to Client ID
     log.info("persistenceId={}", id)
     id
   }

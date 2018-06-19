@@ -70,7 +70,7 @@ println(s"XXXXXXXXXXXXXXXXXXXXXXXXXX shard-node-port=$port")
 
     // SendNotificationMsg to root actor
     implicit val timeout: Timeout = Timeout(askTimeout)
-    val f: Future[Any] = akkaBootstrap.root ? SendNotificationMsg(clientId, publicNotificationRequest)
+    val f: Future[Any] = akkaBootstrap.rootActor ? SendNotificationMsg(clientId, publicNotificationRequest)
     f.map(msg => logger.info("Application got acknowledgement " + msg))
 
 //    if (callbackDetails.callbackUrl.isEmpty) {

@@ -19,5 +19,5 @@ package uk.gov.hmrc.customs.notification.actors
 import akka.actor.ActorRef
 
 trait AkkaBootstrap {
-  def root: ActorRef
+  def rootActor: ActorRef
 }

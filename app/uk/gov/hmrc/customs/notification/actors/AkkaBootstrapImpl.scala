@@ -19,7 +19,7 @@ package uk.gov.hmrc.customs.notification.actors
 import javax.inject.Inject
 
 import akka.actor.ActorSystem
-import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
+import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings, ShardCoordinator}
 import com.typesafe.config.ConfigFactory
 import play.api.Configuration
 import uk.gov.hmrc.customs.notification.connectors.PublicNotificationServiceConnector
@@ -32,7 +32,7 @@ class AkkaBootstrapImpl @Inject() (
   configuration: Configuration,
   pushConnector: PublicNotificationServiceConnector) extends AkkaBootstrap {
 
-  val root = {
+  val rootActor = {
     println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX in AkkaBootstrapImpl constructor !!!!!!")
 
     // bootstrap akka cluster sharding
