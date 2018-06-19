@@ -87,5 +87,7 @@ This has not been spiked yet.
 
 [There is an example of this in](https://github.com/typesafehub/activator-akka-cluster-sharding-scala) 
 
+## Investigate query interfaces for mongo persistence journal
 
+We may need to confirm what notifications have been persisted - eg support team
 
