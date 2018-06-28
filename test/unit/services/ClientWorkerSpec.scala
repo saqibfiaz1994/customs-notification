@@ -18,7 +18,7 @@ package unit.services
 
 import akka.actor.{ActorSystem, Cancellable, Scheduler}
 import org.mockito.ArgumentMatchers.{any, eq => ameq}
-import org.mockito.Mockito.{verify, verifyZeroInteractions, when}
+import org.mockito.Mockito._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.customs.notification.connectors.{ApiSubscriptionFieldsConnector, NotificationQueueConnector, PublicNotificationServiceConnector}
@@ -30,6 +30,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import unit.services.ClientWorkerTestData._
 import util.MockitoPassByNameHelper.PassByNameVerifier
+import util.TestData.emulatedServiceFailure
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
@@ -59,43 +60,99 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
     )
 
     implicit val implicitHc = HeaderCarrier()
+
+    def verifyLogError(msg: String): Unit = {
+      PassByNameVerifier(mockLogger, "error")
+        .withByNameParam(msg)
+        .withParamMatcher(any[HeaderCarrier])
+        .verify()
+    }
+
+    def verifyLogInfo(msg: String): Unit = {
+      PassByNameVerifier(mockLogger, "info")
+        .withByNameParam(msg)
+        .withParamMatcher(any[HeaderCarrier])
+        .verify()
+    }
+
+    def schedulerExpectations(): Unit = {
+      when(mockActorSystem.scheduler).thenReturn(mockScheduler)
+      when(mockScheduler.schedule(any[FiniteDuration], any[FiniteDuration], any[Runnable])(any[ExecutionContext])).thenReturn(mockCancelable)
+    }
+
   }
 
   "ClientWorker" can {
     "In happy path" should {
-      "send notifications when elapsed processing time < lock timeout duration" in new SetUp {
-        when(mockActorSystem.scheduler).thenReturn(mockScheduler)
-        when(mockScheduler.schedule(any[FiniteDuration], any[FiniteDuration], any[Runnable])(any[ExecutionContext])).thenReturn(mockCancelable)
-        when(mockClientNotificationRepo.fetch(TestClientSubscriptionId))
-          .thenReturn(Future.successful(List(ClientNotification1)), Future.successful(List()))
-        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(TestClientSubscriptionId.id.toString))(any[HeaderCarrier]))
+      "send 2 client notifications when 2 found by fetch from the database" in new SetUp {
+        schedulerExpectations()
+        when(mockClientNotificationRepo.fetch(CsidOne))
+          .thenReturn(Future.successful(List(ClientNotificationOne, ClientNotificationTwo)), Future.successful(List()))
+        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
 
-        val actual = await(clientWorker.processNotificationsFor(TestClientSubscriptionId))
+        val actual = await(clientWorker.processNotificationsFor(CsidOne))
 
         actual shouldBe (())
-
         eventually{
-          verify(mockPushConnector).send(any[PublicNotificationRequest]) // TODO: check for equality on request
-          verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL") // TODO: check for equality on request
+          verify(mockPushConnector).send(ameq(pnrOne))
+          verify(mockPushConnector).send(ameq(pnrTwo))
+          verify(mockClientNotificationRepo, times(2)).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL") // TODO: check for equality on request
           verify(mockCancelable).cancel()
           verifyZeroInteractions(mockLockRepo)
-          PassByNameVerifier(mockLogger, "info")
-            .withByNameParam("Whoo Hooo!")
-            .withParamMatcher(any[HeaderCarrier])
-            .verify()
+          verifyLogInfo("Whoo Hooo!")
         }
 
       }
     }
 
-//    "In un-happy path" should {
-//      "log error when fetch client notifications fail" in new SetUp {
-//
-//      }
-//    }
+    "In un-happy path" should {
+      "log error when fetch client notifications fail" in new SetUp {
+        schedulerExpectations()
+        when(mockClientNotificationRepo.fetch(CsidOne))
+          .thenReturn(Future.failed(emulatedServiceFailure))
+        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
+          .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
+        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
+        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
+          .thenReturn(Future.successful(()))
+
+        val actual = await(clientWorker.processNotificationsFor(CsidOne))
+
+        actual shouldBe (())
+        eventually{
+          verifyLogError(emulatedServiceFailure.getMessage)
+          verifyZeroInteractions(mockApiSubscriptionFieldsConnector)
+          verifyZeroInteractions(mockPushConnector)
+          verify(mockCancelable).cancel()
+        }
+
+      }
+
+      "log error when api subscription fields call fails" in new SetUp {
+        schedulerExpectations()
+        when(mockClientNotificationRepo.fetch(CsidOne))
+          .thenReturn(Future.failed(emulatedServiceFailure))
+        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
+          .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
+        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
+        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
+          .thenReturn(Future.successful(()))
+
+        val actual = await(clientWorker.processNotificationsFor(CsidOne))
+
+        actual shouldBe (())
+        eventually{
+          verifyLogError(emulatedServiceFailure.getMessage)
+          verifyZeroInteractions(mockApiSubscriptionFieldsConnector)
+          verifyZeroInteractions(mockPushConnector)
+        }
+
+      }
+    }
   }
+
 }

@@ -67,48 +67,25 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
   "ClientWorker" can {
     "In happy path" should {
       "send notifications when elapsed processing time < lock timeout duration" in new SetUp {
-        when(mockLockRepo.refreshLock(ameq(TestClientSubscriptionId), any[Duration])).thenReturn(Future.successful(true))
-        when(mockClientNotificationRepo.fetch(TestClientSubscriptionId))
-          .thenReturn(Future.successful(List(ClientNotification1)))
-        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(TestClientSubscriptionId.id.toString))(any[HeaderCarrier]))
+        when(mockLockRepo.refreshLock(ameq(CsidOne), any[Duration])).thenReturn(Future.successful(true))
+        when(mockClientNotificationRepo.fetch(CsidOne))
+          .thenReturn(Future.successful(List(ClientNotificationOne)))
+        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
 
-        val actual = await(clientWorker.processNotificationsFor(TestClientSubscriptionId))
+        val actual = await(clientWorker.processNotificationsFor(CsidOne))
 
         actual shouldBe (())
         eventually{
           verify(mockPushConnector).send(any[PublicNotificationRequest]) // TODO: check for equality on request
           verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL") // TODO: check for equality on request
-          verify(mockLockRepo, times(5)).refreshLock(ameq(TestClientSubscriptionId), any[Duration])
+          verify(mockLockRepo, times(4)).refreshLock(ameq(CsidOne), any[Duration])
         }
 
 //        Thread.sleep(5000)
-      }
-    }
-    "In un-happy path" should {
-      "clear timer when lockRepo refresh returns false" in new SetUp {
-        when(mockLockRepo.refreshLock(ameq(TestClientSubscriptionId), any[Duration])).thenReturn(Future.successful(false))
-        when(mockClientNotificationRepo.fetch(TestClientSubscriptionId))
-          .thenReturn(Future.successful(List(ClientNotification1)))
-        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(TestClientSubscriptionId.id.toString))(any[HeaderCarrier]))
-          .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
-        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
-        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
-          .thenReturn(Future.successful(()))
-
-        val actual = await(clientWorker.processNotificationsFor(TestClientSubscriptionId))
-
-        actual shouldBe (())
-//        eventually{
-//          verify(mockPushConnector).send(any[PublicNotificationRequest]) // TODO: check for equality on request
-//          verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL") // TODO: check for equality on request
-//          verify(mockLockRepo, times(5)).refreshLock(ameq(TestClientSubscriptionId), any[Duration])
-//        }
-
-        Thread.sleep(5000)
       }
     }
   }

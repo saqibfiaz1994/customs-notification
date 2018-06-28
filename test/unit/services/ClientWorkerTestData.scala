@@ -22,15 +22,23 @@ import org.joda.time.DateTime
 import uk.gov.hmrc.customs.notification.domain._
 
 object ClientWorkerTestData {
-  val ClientSubscriptionIdAsString = "eaca01f9-ec3b-4ede-b263-61b626dde232"
-  val TestClientSubscriptionId = ClientSubscriptionId(UUID.fromString(ClientSubscriptionIdAsString))
-  val Headers = Seq("h1" -> "v1")
-  val Payload = "PAYLOAD"
+  val CsidOne = ClientSubscriptionId(UUID.fromString("eaca01f9-ec3b-4ede-b263-61b626dde231"))
+  val CsidTwo = ClientSubscriptionId(UUID.fromString("eaca01f9-ec3b-4ede-b263-61b626dde232"))
+  val HeaderTuples = Seq("h1" -> "v1")
+  val Headers = HeaderTuples.map(t => Header(t._1, t._2))
+  val PayloadOne = "PAYLOAD_ONE"
+  val PayloadTwo = "PAYLOAD_TWO"
   val ContentType = "CONTENT_TYPE"
-  val notification1 = Notification(Headers, Payload, ContentType)
+  val NotificationOne = Notification(HeaderTuples, PayloadOne, ContentType)
+  val NotificationTwo = Notification(HeaderTuples, PayloadTwo, ContentType)
   val TimeStampOne = DateTime.now
-  val ClientNotification1 = ClientNotification(TestClientSubscriptionId, notification1, TimeStampOne)
+  val TimeStampTwo = TimeStampOne.plus(1000) //TODO
+  val ClientNotificationOne = ClientNotification(CsidOne, NotificationOne, TimeStampOne)
+  val ClientNotificationTwo = ClientNotification(CsidOne, NotificationTwo, TimeStampTwo)
   val DeclarantCallbackDataOne = DeclarantCallbackData("URL", "SECURITY_TOKEN")
+  val ConversationId = "TODO_ADD_CONVERSATION_ID_TO_MODEL"
+  val pnrOne  =PublicNotificationRequest(CsidOne.id.toString, PublicNotificationRequestBody("URL", "SECURITY_TOKEN", ConversationId, Headers, PayloadOne))
+  val pnrTwo  =PublicNotificationRequest(CsidOne.id.toString, PublicNotificationRequestBody("URL", "SECURITY_TOKEN", ConversationId, Headers, PayloadTwo))
 }
 
 
