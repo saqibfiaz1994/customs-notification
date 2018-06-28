@@ -85,7 +85,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
           verify(mockLockRepo, times(5)).refreshLock(ameq(TestClientSubscriptionId), any[Duration])
         }
 
-        Thread.sleep(5000)
+//        Thread.sleep(5000)
       }
     }
     "In un-happy path" should {

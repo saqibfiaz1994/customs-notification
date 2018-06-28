@@ -29,6 +29,7 @@ import uk.gov.hmrc.customs.notification.services.ClientWorkerImpl
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import unit.services.ClientWorkerTestData._
+import util.MockitoPassByNameHelper.PassByNameVerifier
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,7 +47,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
     val mockPushConnector = mock[PublicNotificationServiceConnector]
     val mockPullConnector = mock[NotificationQueueConnector]
     val mockLockRepo = mock[LockRepo]
-    val mockNotificationLogger = mock[NotificationLogger]
+    val mockLogger = mock[NotificationLogger]
     val clientWorker = new ClientWorkerImpl(
       mockActorSystem,
       mockClientNotificationRepo,
@@ -54,7 +55,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
       mockPushConnector,
       mockPullConnector,
       mockLockRepo,
-      mockNotificationLogger
+      mockLogger
     )
 
     implicit val implicitHc = HeaderCarrier()
@@ -76,20 +77,25 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
         val actual = await(clientWorker.processNotificationsFor(TestClientSubscriptionId))
 
         actual shouldBe (())
+
         eventually{
           verify(mockPushConnector).send(any[PublicNotificationRequest]) // TODO: check for equality on request
           verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL") // TODO: check for equality on request
           verify(mockCancelable).cancel()
           verifyZeroInteractions(mockLockRepo)
+          PassByNameVerifier(mockLogger, "info")
+            .withByNameParam("Whoo Hooo!")
+            .withParamMatcher(any[HeaderCarrier])
+            .verify()
         }
 
-//        Thread.sleep(10000)
       }
     }
-    "In un-happy path" should {
-      "log error when fetch client notifications fail" in {
 
-      }
-    }
+//    "In un-happy path" should {
+//      "log error when fetch client notifications fail" in new SetUp {
+//
+//      }
+//    }
   }
 }

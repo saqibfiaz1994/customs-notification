@@ -88,21 +88,19 @@ class ClientWorkerImpl(
       Thread.sleep(5000)
     }
 
-    repo.fetch(csid).map{clientNotifications =>
-      logger.debug(s"1. XXXXXXXXXXXXXXXXXXXX $clientNotifications")
-      val cnTuples = clientNotifications.map(cn => (csid, cn))
-      sequence(cnTuples)(pushClientNotification).recover{
-        case e: Exception =>
-          logger.error(e.getMessage)
-          enqueueClientNotificationsToPullQueue(csid)
-      }
+    logger.info("Whoo Hooo!")
+
+    (for {
+      clientNotifications <- repo.fetch(csid)
+      cnTuples = clientNotifications.map(cn => (csid, cn))
+      _ <- sequence(cnTuples)(pushClientNotification)
+    } yield ())
+    .recover {
+      case e: Exception =>
+        logger.error(e.getMessage)
+        enqueueClientNotificationsToPullQueue(csid)
     }
-//    .recover{
-//      case e: Exception => {
-//        logger.error(s"Error fetching client notifications for csid=$csid")
-//        Future.successful(())
-//      }
-//    }
+
   }
 
   private def pushClientNotification(cnTuple: (ClientSubscriptionId, ClientNotification))(implicit hc: HeaderCarrier): Future[Unit] = {
