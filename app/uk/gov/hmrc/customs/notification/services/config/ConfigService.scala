@@ -97,5 +97,5 @@ class ConfigService @Inject()(configValidationNel: ConfigValidationNelAdaptor, l
 
   override val googleAnalyticsSenderConfig = config.googleAnalyticsSenderConfig
 
-  override def pushLockRefreshDurationInSeconds: Int = config.pushLockRefreshDurationInSeconds
+  override val pushLockRefreshDurationInSeconds: Int = config.pushLockRefreshDurationInSeconds
 }
