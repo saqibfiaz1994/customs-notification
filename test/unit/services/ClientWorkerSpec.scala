@@ -139,12 +139,12 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
 
       }
 
-      "log two errors when api subscription fields call fails, once for PUSH and once for PULL" in new SetUp {
+      "log two errors when api subscription fields call throws exception, once for PUSH and once for PULL" in new SetUp {
         schedulerExpectations()
         when(mockClientNotificationRepo.fetch(CsidOne))
-          .thenReturn(Future.failed(emulatedServiceFailure))
+          .thenReturn(List(ClientNotificationOne, ClientNotificationTwo))
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
-          .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
+          .thenReturn(Future.failed(emulatedServiceFailure))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
@@ -155,7 +155,28 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
         eventually{
           verifyLogError("Error pushing notification")
           verifyLogError("Error enqueueing notification to pull queue")
-          verifyZeroInteractions(mockApiSubscriptionFieldsConnector)
+          verifyZeroInteractions(mockPushConnector)
+          verify(mockCancelable).cancel()
+        }
+
+      }
+
+      "log two errors when api subscription fields call returns None, once for PUSH and once for PULL" in new SetUp {
+        schedulerExpectations()
+        when(mockClientNotificationRepo.fetch(CsidOne))
+          .thenReturn(List(ClientNotificationOne, ClientNotificationTwo))
+        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
+          .thenReturn(Future.successful(None))
+        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
+        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
+          .thenReturn(Future.successful(()))
+
+        val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
+
+        actual shouldBe (())
+        eventually{
+          verifyLogError("Error pushing notification")
+          verifyLogError("Error enqueueing notification to pull queue")
           verifyZeroInteractions(mockPushConnector)
           verify(mockCancelable).cancel()
         }
