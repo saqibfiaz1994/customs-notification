@@ -30,9 +30,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-case class SendException(cause: Throwable) extends Exception(cause)
-
-
 /*
 TODO
 - add conversationId to model
