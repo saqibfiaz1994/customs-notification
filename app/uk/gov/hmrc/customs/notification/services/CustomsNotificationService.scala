@@ -21,6 +21,7 @@ import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.http.HeaderNames
+import play.api.mvc.Headers
 import uk.gov.hmrc.customs.notification.connectors.{GoogleAnalyticsSenderConnector, NotificationQueueConnector, PublicNotificationServiceConnector}
 import uk.gov.hmrc.customs.notification.controllers.RequestMetaData
 import uk.gov.hmrc.customs.notification.domain._
@@ -41,7 +42,7 @@ class CustomsNotificationService @Inject()(logger: NotificationLogger,
                                            clientNotificationRepo: ClientNotificationRepo,
                                            notificationDispatcher: NotificationDispatcher
                                           ) {
-  def handleNotification(xml: NodeSeq, callbackDetails: DeclarantCallbackData, metaData: RequestMetaData)(implicit hc: HeaderCarrier): Future[Unit] = {
+  def handleNotification(xml: NodeSeq, callbackDetails: DeclarantCallbackData, metaData: RequestMetaData)(implicit hc: HeaderCarrier, headers: Headers): Future[Unit] = {
     gaConnector.send("notificationRequestReceived", s"[ConversationId=${metaData.conversationId}] A notification received for delivery")
 
     val publicNotificationRequest = publicNotificationRequestService.createRequest(xml, callbackDetails, metaData)
@@ -54,8 +55,8 @@ class CustomsNotificationService @Inject()(logger: NotificationLogger,
     }
   }
 
-  private def saveNotificationToDatabaseAndCallDispatcher(req: PublicNotificationRequest)(implicit hc: HeaderCarrier) = {
-    val contentType = hc.headers.toMap[String, String].getOrElse(HeaderNames.CONTENT_TYPE, throw new RuntimeException("Content type missing? Very unlikely"))
+  private def saveNotificationToDatabaseAndCallDispatcher(req: PublicNotificationRequest)(implicit hc: HeaderCarrier, headers: Headers) = {
+    val contentType = headers.get(HeaderNames.CONTENT_TYPE).getOrElse(throw new IllegalStateException("Content type missing? Very unlikely"))
 
     val notification = Notification(hc.headers.seq, req.body.xmlPayload, contentType)
     val clientSubscriptionId = ClientSubscriptionId(UUID.fromString(req.clientSubscriptionId))
@@ -74,7 +75,7 @@ class CustomsNotificationService @Inject()(logger: NotificationLogger,
         logger.info("Notification has been passed on to PULL service")(hc)
         ()
       }.recover {
-      case t: Throwable =>
+      case _: Throwable =>
         gaConnector.send("notificationPullRequestFailed", s"[ConversationId=${publicNotificationRequest.body.conversationId}] A notification Pull request failed")
     }
   }

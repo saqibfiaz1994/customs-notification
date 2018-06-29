@@ -26,7 +26,8 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Span}
-import play.api.http.HeaderNames
+import play.api.http.HeaderNames._
+import play.api.mvc.Headers
 import uk.gov.hmrc.customs.notification.connectors.{GoogleAnalyticsSenderConnector, NotificationQueueConnector, PublicNotificationServiceConnector}
 import uk.gov.hmrc.customs.notification.controllers.RequestMetaData
 import uk.gov.hmrc.customs.notification.domain.{ClientNotification, ClientSubscriptionId, DeclarantCallbackData, Notification}
@@ -45,7 +46,7 @@ class CustomsNotificationServiceSpec extends UnitSpec with MockitoSugar with Bef
   override implicit def patienceConfig: PatienceConfig =
     super.patienceConfig.copy(timeout = Span(defaultTimeout.toMillis, Millis))
 
-  private implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = Seq(HeaderNames.CONTENT_TYPE -> "application/xml"))
+  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val mockNotificationLogger = mock[NotificationLogger]
   private val mockPublicNotificationRequestService = mock[PublicNotificationRequestService]
@@ -57,7 +58,8 @@ class CustomsNotificationServiceSpec extends UnitSpec with MockitoSugar with Bef
   private val mockGAConnector = mock[GoogleAnalyticsSenderConnector]
   private val mockClientNotificationRepo = mock[ClientNotificationRepo]
   private val mockNotificationDispatcher = mock[NotificationDispatcher]
-  private val contentType = hc.headers.toMap[String, String].get(HeaderNames.CONTENT_TYPE).get
+  private val contentType = "application/xml"
+  private implicit val headers: Headers = Headers(CONTENT_TYPE -> contentType)
   private val notification = Notification(hc.headers.seq, publicNotificationRequest.body.xmlPayload, contentType)
   private val clientSubscriptionId = ClientSubscriptionId(UUID.fromString(publicNotificationRequest.clientSubscriptionId))
   private val clientNotification = ClientNotification(clientSubscriptionId, notification, DateTime.now())
@@ -88,7 +90,6 @@ class CustomsNotificationServiceSpec extends UnitSpec with MockitoSugar with Bef
     "first try to Push the notification" in {
       await(customsNotificationService.handleNotification(ValidXML, validCallbackData, requestMetaData))
 
-
       eventually(verify(mockClientNotificationRepo).save(refEq(clientNotification, "timestamp")))
       eventually(verify(mockNotificationDispatcher).process(meq(Set(clientSubscriptionId))))
     }
@@ -106,6 +107,26 @@ class CustomsNotificationServiceSpec extends UnitSpec with MockitoSugar with Bef
       val capturedEventNames = eventNameCaptor.getAllValues
       msgCaptor.getAllValues.get(capturedEventNames.indexOf("notificationRequestReceived")) shouldBe s"[ConversationId=${requestMetaData.conversationId}] A notification received for delivery"
       msgCaptor.getAllValues.get(capturedEventNames.indexOf("notificationLeftToBePulled")) shouldBe s"[ConversationId=${requestMetaData.conversationId}] A notification has been left to be pulled"
+    }
+
+    "fails when content type header is missing" in {
+      implicit val headers: Headers = Headers()
+
+      val caught = intercept[IllegalStateException] {
+        await(customsNotificationService.handleNotification(ValidXML, validCallbackData, requestMetaData))
+      }
+
+      caught.getMessage shouldBe "Content type missing? Very unlikely"
+    }
+
+    "fails when was unable to save notification to repository" in {
+      when(mockClientNotificationRepo.save(refEq(clientNotification, "timestamp"))).thenReturn(Future.successful(false))
+
+      val caught = intercept[RuntimeException] {
+        await(customsNotificationService.handleNotification(ValidXML, validCallbackData, requestMetaData))
+      }
+
+      caught.getMessage shouldBe "Dispatcher failed to process the notification"
     }
   }
 }
