@@ -66,7 +66,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
 
   "ClientWorker" can {
     "In happy path" should {
-      "send notifications when elapsed processing time < lock timeout duration" in new SetUp {
+      "refresh time when elapsed time > time delay duration" in new SetUp {
         when(mockLockRepo.refreshLock(ameq(CsidOne), any[Duration])).thenReturn(Future.successful(true))
         when(mockClientNotificationRepo.fetch(CsidOne))
           .thenReturn(Future.successful(List(ClientNotificationOne)))

@@ -26,7 +26,7 @@ import uk.gov.hmrc.customs.notification.domain.PublicNotificationRequest
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockRepo}
 import uk.gov.hmrc.customs.notification.services.ClientWorkerImpl
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.test.UnitSpec
 import unit.services.ClientWorkerTestData._
 import util.MockitoPassByNameHelper.PassByNameVerifier
@@ -35,6 +35,10 @@ import util.TestData.emulatedServiceFailure
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
+/*
+TODO:
+callBack -> None
+ */
 class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
 
   trait SetUp {
@@ -49,6 +53,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
     val mockPullConnector = mock[NotificationQueueConnector]
     val mockLockRepo = mock[LockRepo]
     val mockLogger = mock[NotificationLogger]
+    val mockHttpResponse = mock[HttpResponse]
     val clientWorker = new ClientWorkerImpl(
       mockActorSystem,
       mockClientNotificationRepo,
@@ -98,19 +103,20 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
 
         actual shouldBe (())
         eventually{
+          verifyLogInfo("Whoo Hooo!")
           verify(mockPushConnector).send(ameq(pnrOne))
           verify(mockPushConnector).send(ameq(pnrTwo))
           verify(mockClientNotificationRepo, times(2)).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL") // TODO: check for equality on request
           verify(mockCancelable).cancel()
           verifyZeroInteractions(mockLockRepo)
-          verifyLogInfo("Whoo Hooo!")
+          verifyZeroInteractions(mockPullConnector)
         }
 
       }
     }
 
     "In un-happy path" should {
-      "log error when fetch client notifications fail" in new SetUp {
+      "log repo error twice when fetch client notifications fail, once for PUSH and once for PULL" in new SetUp {
         schedulerExpectations()
         when(mockClientNotificationRepo.fetch(CsidOne))
           .thenReturn(Future.failed(emulatedServiceFailure))
@@ -124,7 +130,8 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
 
         actual shouldBe (())
         eventually{
-          verifyLogError(emulatedServiceFailure.getMessage)
+          verifyLogError("Error pushing notification")
+          verifyLogError("Error enqueueing notification to pull queue")
           verifyZeroInteractions(mockApiSubscriptionFieldsConnector)
           verifyZeroInteractions(mockPushConnector)
           verify(mockCancelable).cancel()
@@ -132,7 +139,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
 
       }
 
-      "log error when api subscription fields call fails" in new SetUp {
+      "log two errors when api subscription fields call fails, once for PUSH and once for PULL" in new SetUp {
         schedulerExpectations()
         when(mockClientNotificationRepo.fetch(CsidOne))
           .thenReturn(Future.failed(emulatedServiceFailure))
@@ -146,12 +153,39 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
 
         actual shouldBe (())
         eventually{
-          verifyLogError(emulatedServiceFailure.getMessage)
+          verifyLogError("Error pushing notification")
+          verifyLogError("Error enqueueing notification to pull queue")
           verifyZeroInteractions(mockApiSubscriptionFieldsConnector)
           verifyZeroInteractions(mockPushConnector)
+          verify(mockCancelable).cancel()
         }
 
       }
+
+      "log one error for PUSH when call fails and enqueue Notification to PULL queue" in new SetUp {
+        schedulerExpectations()
+        when(mockClientNotificationRepo.fetch(CsidOne))
+          .thenReturn(Future.successful(List(ClientNotificationOne, ClientNotificationTwo)), Future.successful(List(ClientNotificationOne, ClientNotificationTwo)))
+        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
+          .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
+        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.failed(emulatedServiceFailure), Future.failed(emulatedServiceFailure))
+        when(mockPullConnector.enqueue(any[PublicNotificationRequest])).thenReturn(Future.successful(mockHttpResponse), Future.successful(mockHttpResponse)) // TODO: compare request
+
+        val actual = await(clientWorker.processNotificationsFor(CsidOne))
+
+        actual shouldBe (())
+        eventually{
+          verify(mockClientNotificationRepo, never()).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")
+          verify(mockCancelable).cancel()
+          verifyZeroInteractions(mockLockRepo)
+          verifyLogInfo("Whoo Hooo!")
+          verifyLogError("Error pushing notification")
+          verify(mockCancelable).cancel()
+          verify(mockPullConnector, times(2)).enqueue(any[PublicNotificationRequest])
+        }
+
+      }
+
     }
   }
 

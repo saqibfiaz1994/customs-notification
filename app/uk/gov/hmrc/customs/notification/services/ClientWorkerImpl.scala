@@ -35,6 +35,8 @@ case class SendException(cause: Throwable) extends Exception(cause)
 
 /*
 TODO
+- integrate with latest on branch
+- sort out HeaderCarrier requirement - needed for logging - or change logging API
 - wire in dummy config service case class that has lockRefresh delay AND simulated processing delay (for unit tests)
  */
 @Singleton
@@ -96,8 +98,8 @@ class ClientWorkerImpl(
       _ <- sequence(cnTuples)(pushClientNotification)
     } yield ())
     .recover {
-      case e: Exception =>
-        logger.error(e.getMessage)
+      case e: Throwable =>
+        logger.error("Error pushing notification")
         enqueueClientNotificationsToPullQueue(csid)
     }
 
@@ -117,13 +119,8 @@ class ClientWorkerImpl(
   private def eventualPublicNotificationRequest(csid: ClientSubscriptionId, cn: ClientNotification)(implicit hc: HeaderCarrier): Future[PublicNotificationRequest] = {
     val futureMaybeCallbackDetails: Future[Option[DeclarantCallbackData]] = callbackDetailsConnector.getClientData(csid.id.toString)
     futureMaybeCallbackDetails.map{ maybeCallbackDetails =>
-      val declarantCallbackData = maybeCallbackDetails.fold(throw new IllegalStateException("TODO: figure out processing")){ cd => cd}
-
-      logger.debug(s"3. XXXXXXXXXXXXXXXXXXXX $maybeCallbackDetails")
-
+      val declarantCallbackData = maybeCallbackDetails.getOrElse(throw new IllegalStateException("TODO: figure out error handling"))
       val request = publicNotificationRequest(csid, declarantCallbackData, cn)
-
-      logger.debug(s"4. XXXXXXXXXXXXXXXXXXXX $request")
       request
     }
   }
@@ -146,19 +143,19 @@ class ClientWorkerImpl(
 
 
   private def enqueueClientNotificationsToPullQueue(csid: ClientSubscriptionId)(implicit hc: HeaderCarrier): Future[Unit] = {
-    repo.fetch(csid).map{clientNotifications =>
-      logger.debug(s"1. XXXXXXXXXXXXXXXXXXXX $clientNotifications")
-      val cnTuples = clientNotifications.map(cn => (csid, cn))
-      sequence(cnTuples)(enqueueClientNotificationToPullQueue).recover{
-        case e: Exception =>
-          logger.error(e.getMessage) // TODO: extend logging API
-      }
-    } // fetch
 
-    Future.successful(())
+    (for {
+      clientNotifications <- repo.fetch(csid)
+      cnTuples = clientNotifications.map(cn => (csid, cn))
+      _ <- sequence(cnTuples)(enqueueClientNotification)
+    } yield ())
+      .recover {
+        case e: Exception =>
+          logger.error("Error enqueueing notification to pull queue")
+      }
   }
 
-  private def enqueueClientNotificationToPullQueue(cnTuple: (ClientSubscriptionId, ClientNotification))(implicit hc: HeaderCarrier): Future[Unit] = {
+  private def enqueueClientNotification(cnTuple: (ClientSubscriptionId, ClientNotification))(implicit hc: HeaderCarrier): Future[Unit] = {
     val csid = cnTuple._1
     val cn = cnTuple._2
 
@@ -166,8 +163,8 @@ class ClientWorkerImpl(
       request <- eventualPublicNotificationRequest(csid, cn)
       _ <- pullConnector.enqueue(request)
     } yield ()
-  }
 
+  }
 
   private def sequence[A, B](iter: Iterable[A])(fn: A => Future[B])
                             (implicit ec: ExecutionContext): Future[List[B]] =
@@ -178,6 +175,5 @@ class ClientWorkerImpl(
           next <- fn(next)
         } yield previousResults :+ next
     }
-
 
 }
