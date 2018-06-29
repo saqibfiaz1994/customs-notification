@@ -55,6 +55,9 @@ class ClientWorkerImpl(
   //TODO: read from config
   val extendLockDuration =  org.joda.time.Duration.standardSeconds(config.pushLockRefreshDurationInSeconds)
 
+  //TODO: remove
+  protected def simulatedDelayInMilliSeconds = 0
+
   override def processNotificationsFor(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId): Future[Unit] /*(implicit hc: HeaderCarrier) ?????*/ = {
     //implicit HeaderCarrier required for ApiSubscriptionFieldsConnector
     //however looking at api-subscription-fields service I do not think it is required so keep new HeaderCarrier() for now
@@ -88,9 +91,9 @@ class ClientWorkerImpl(
 
   private def process(csid: ClientSubscriptionId)(implicit hc: HeaderCarrier): Future[Unit] = {
 
-    //TODO: remove
+    //TODO: remove - only used by timer integration test
     scala.concurrent.blocking {
-      Thread.sleep(5000)
+      Thread.sleep(simulatedDelayInMilliSeconds)
     }
 
     logger.info("Whoo Hooo!")

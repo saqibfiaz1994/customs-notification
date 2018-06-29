@@ -37,6 +37,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
 
   val actorSystem = ActorSystem("TestActorSystem")
   val four = 4
+  val fiveSeconds = 5000
 
   trait SetUp {
 
@@ -47,7 +48,8 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
     val mockLockRepo = mock[LockRepo]
     val mockNotificationLogger = mock[NotificationLogger]
     val mockCustomsNotificationConfig = mock[CustomsNotificationConfig]
-    val clientWorker = new ClientWorkerImpl(
+
+    val clientWorker = new ClientWorkerImpl (
       mockCustomsNotificationConfig,
       actorSystem,
       mockClientNotificationRepo,
@@ -56,11 +58,13 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
       mockPullConnector,
       mockLockRepo,
       mockNotificationLogger
-    )
+    ) {
+      override def simulatedDelayInMilliSeconds = fiveSeconds
+    }
 
     implicit val implicitHc = HeaderCarrier()
 
-    def eqLockOwnerId(id: LockOwnerId) =ameq[String](id.id).asInstanceOf[LockOwnerId]
+    def eqLockOwnerId(id: LockOwnerId) = ameq[String](id.id).asInstanceOf[LockOwnerId]
 
     when(mockCustomsNotificationConfig.pushLockRefreshDurationInSeconds).thenReturn(1)
   }
