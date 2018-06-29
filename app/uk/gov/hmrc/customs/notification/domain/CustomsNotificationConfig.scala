@@ -27,4 +27,6 @@ trait CustomsNotificationConfig {
   def notificationQueueConfig: NotificationQueueConfig
 
   def googleAnalyticsSenderConfig: GoogleAnalyticsSenderConfig
+
+  def pushLockRefreshDurationInSeconds: Int
 }

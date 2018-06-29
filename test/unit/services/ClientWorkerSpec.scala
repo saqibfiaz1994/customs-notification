@@ -22,7 +22,7 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.customs.notification.connectors.{ApiSubscriptionFieldsConnector, NotificationQueueConnector, PublicNotificationServiceConnector}
-import uk.gov.hmrc.customs.notification.domain.PublicNotificationRequest
+import uk.gov.hmrc.customs.notification.domain.{CustomsNotificationConfig, PublicNotificationRequest}
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockRepo}
 import uk.gov.hmrc.customs.notification.services.ClientWorkerImpl
@@ -47,6 +47,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
     val mockScheduler = mock[Scheduler]
     val mockCancelable = mock[Cancellable]
 
+    val mockCustomsNotificationConfig = mock[CustomsNotificationConfig]
     val mockClientNotificationRepo = mock[ClientNotificationRepo]
     val mockApiSubscriptionFieldsConnector = mock[ApiSubscriptionFieldsConnector]
     val mockPushConnector = mock[PublicNotificationServiceConnector]
@@ -55,6 +56,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
     val mockLogger = mock[NotificationLogger]
     val mockHttpResponse = mock[HttpResponse]
     val clientWorker = new ClientWorkerImpl(
+      mockCustomsNotificationConfig,
       mockActorSystem,
       mockClientNotificationRepo,
       mockApiSubscriptionFieldsConnector,
@@ -85,6 +87,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
       when(mockScheduler.schedule(any[FiniteDuration], any[FiniteDuration], any[Runnable])(any[ExecutionContext])).thenReturn(mockCancelable)
     }
 
+    when(mockCustomsNotificationConfig.pushLockRefreshDurationInSeconds).thenReturn(1)
   }
 
   "ClientWorker" can {

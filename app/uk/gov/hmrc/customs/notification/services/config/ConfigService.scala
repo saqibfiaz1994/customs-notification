@@ -41,11 +41,15 @@ class ConfigService @Inject()(configValidationNel: ConfigValidationNelAdaptor, l
 
   private case class CustomsNotificationConfigImpl(maybeBasicAuthToken: Option[String],
                                                    notificationQueueConfig: NotificationQueueConfig,
-                                                   googleAnalyticsSenderConfig: GoogleAnalyticsSenderConfig) extends CustomsNotificationConfig
+                                                   googleAnalyticsSenderConfig: GoogleAnalyticsSenderConfig,
+                                                   pushLockRefreshDurationInSeconds: Int) extends CustomsNotificationConfig
 
   private val root = configValidationNel.root
 
   private val config: CustomsNotificationConfig = {
+
+    val pushLockRefreshDurationInSecondsNel: ValidationNel[String, Int] =
+      configValidationNel.root.int("push.refresh.lock.duration.seconds")
 
     val authTokenInternalNel: ValidationNel[String, Option[String]] =
       configValidationNel.root.maybeString("auth.token.internal")
@@ -66,7 +70,9 @@ class ConfigService @Inject()(configValidationNel: ConfigValidationNelAdaptor, l
 
     val validatedConfig: ValidationNel[String, CustomsNotificationConfig] =
       (authTokenInternalNel |@|
-        notificationQueueConfigNel |@| validatedGoogleAnalyticsSenderConfigNel
+        notificationQueueConfigNel |@|
+        validatedGoogleAnalyticsSenderConfigNel |@|
+        pushLockRefreshDurationInSecondsNel
         ) (CustomsNotificationConfigImpl.apply)
 
     /*
@@ -90,4 +96,6 @@ class ConfigService @Inject()(configValidationNel: ConfigValidationNelAdaptor, l
   override val notificationQueueConfig: NotificationQueueConfig = config.notificationQueueConfig
 
   override val googleAnalyticsSenderConfig = config.googleAnalyticsSenderConfig
+
+  override def pushLockRefreshDurationInSeconds: Int = config.pushLockRefreshDurationInSeconds
 }

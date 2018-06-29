@@ -37,9 +37,12 @@ case class SendException(cause: Throwable) extends Exception(cause)
 TODO
 - sort out HeaderCarrier requirement - needed for logging - or change logging API
 - wire in dummy config service case class that has lockRefresh delay AND simulated processing delay (for unit tests)
+- go through TODOs
+DONE
  */
 @Singleton
 class ClientWorkerImpl(
+                        config: CustomsNotificationConfig,
                         actorSystem: ActorSystem,
                         repo: ClientNotificationRepo,
                         callbackDetailsConnector: ApiSubscriptionFieldsConnector,
@@ -50,7 +53,7 @@ class ClientWorkerImpl(
                       ) extends ClientWorker {
 
   //TODO: read from config
-  val extendLockDuration =  org.joda.time.Duration.standardSeconds(1)
+  val extendLockDuration =  org.joda.time.Duration.standardSeconds(config.pushLockRefreshDurationInSeconds)
 
   override def processNotificationsFor(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId): Future[Unit] /*(implicit hc: HeaderCarrier) ?????*/ = {
     //implicit HeaderCarrier required for ApiSubscriptionFieldsConnector
@@ -85,6 +88,7 @@ class ClientWorkerImpl(
 
   private def process(csid: ClientSubscriptionId)(implicit hc: HeaderCarrier): Future[Unit] = {
 
+    //TODO: remove
     scala.concurrent.blocking {
       Thread.sleep(5000)
     }

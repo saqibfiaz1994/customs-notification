@@ -23,7 +23,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.customs.notification.connectors.{ApiSubscriptionFieldsConnector, NotificationQueueConnector, PublicNotificationServiceConnector}
-import uk.gov.hmrc.customs.notification.domain.PublicNotificationRequest
+import uk.gov.hmrc.customs.notification.domain.{CustomsNotificationConfig, PublicNotificationRequest}
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockOwnerId, LockRepo}
 import uk.gov.hmrc.customs.notification.services.ClientWorkerImpl
@@ -46,7 +46,9 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
     val mockPullConnector = mock[NotificationQueueConnector]
     val mockLockRepo = mock[LockRepo]
     val mockNotificationLogger = mock[NotificationLogger]
+    val mockCustomsNotificationConfig = mock[CustomsNotificationConfig]
     val clientWorker = new ClientWorkerImpl(
+      mockCustomsNotificationConfig,
       actorSystem,
       mockClientNotificationRepo,
       mockApiSubscriptionFieldsConnector,
@@ -59,6 +61,8 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
     implicit val implicitHc = HeaderCarrier()
 
     def eqLockOwnerId(id: LockOwnerId) =ameq[String](id.id).asInstanceOf[LockOwnerId]
+
+    when(mockCustomsNotificationConfig.pushLockRefreshDurationInSeconds).thenReturn(1)
   }
 
   override protected def afterAll(): Unit = {
