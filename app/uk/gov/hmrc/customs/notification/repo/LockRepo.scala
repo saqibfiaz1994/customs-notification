@@ -24,7 +24,7 @@ import uk.gov.hmrc.lock.{ExclusiveTimePeriodLock, LockRepository}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class LockOwnerId(val id: String) extends AnyVal
+case class LockOwnerId(val id: String) extends AnyVal
 
 trait LockRepo {
 

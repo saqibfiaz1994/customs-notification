@@ -25,18 +25,18 @@ import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.customs.notification.connectors.{ApiSubscriptionFieldsConnector, NotificationQueueConnector, PublicNotificationServiceConnector}
 import uk.gov.hmrc.customs.notification.domain.PublicNotificationRequest
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
-import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockRepo}
+import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockOwnerId, LockRepo}
 import uk.gov.hmrc.customs.notification.services.ClientWorkerImpl
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import unit.services.ClientWorkerTestData._
 
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 
 class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually with BeforeAndAfterAll {
 
   val actorSystem = ActorSystem("TestActorSystem")
+  val four = 4
 
   trait SetUp {
 
@@ -57,6 +57,8 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
     )
 
     implicit val implicitHc = HeaderCarrier()
+
+    def eqLockOwnerId(id: LockOwnerId) =ameq[String](id.id).asInstanceOf[LockOwnerId]
   }
 
   override protected def afterAll(): Unit = {
@@ -67,7 +69,8 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
   "ClientWorker" can {
     "In happy path" should {
       "refresh time when elapsed time > time delay duration" in new SetUp {
-        when(mockLockRepo.refreshLock(ameq(CsidOne), any[Duration])).thenReturn(Future.successful(true))
+
+        when(mockLockRepo.refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])).thenReturn(Future.successful(true))
         when(mockClientNotificationRepo.fetch(CsidOne))
           .thenReturn(Future.successful(List(ClientNotificationOne)))
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
@@ -76,13 +79,13 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
 
-        val actual = await(clientWorker.processNotificationsFor(CsidOne))
+        val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
 
         actual shouldBe (())
         eventually{
           verify(mockPushConnector).send(any[PublicNotificationRequest]) // TODO: check for equality on request
           verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL") // TODO: check for equality on request
-          verify(mockLockRepo, times(4)).refreshLock(ameq(CsidOne), any[Duration])
+          verify(mockLockRepo, times(four)).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
         }
 
 //        Thread.sleep(5000)

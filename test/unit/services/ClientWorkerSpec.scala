@@ -99,7 +99,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
 
-        val actual = await(clientWorker.processNotificationsFor(CsidOne))
+        val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
 
         actual shouldBe (())
         eventually{
@@ -126,7 +126,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
 
-        val actual = await(clientWorker.processNotificationsFor(CsidOne))
+        val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
 
         actual shouldBe (())
         eventually{
@@ -149,7 +149,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
 
-        val actual = await(clientWorker.processNotificationsFor(CsidOne))
+        val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
 
         actual shouldBe (())
         eventually{
@@ -171,7 +171,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.failed(emulatedServiceFailure), Future.failed(emulatedServiceFailure))
         when(mockPullConnector.enqueue(any[PublicNotificationRequest])).thenReturn(Future.successful(mockHttpResponse), Future.successful(mockHttpResponse)) // TODO: compare request
 
-        val actual = await(clientWorker.processNotificationsFor(CsidOne))
+        val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
 
         actual shouldBe (())
         eventually{

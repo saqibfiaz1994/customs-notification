@@ -23,7 +23,7 @@ import akka.actor.ActorSystem
 import uk.gov.hmrc.customs.notification.connectors.{ApiSubscriptionFieldsConnector, NotificationQueueConnector, PublicNotificationServiceConnector}
 import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
-import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockRepo}
+import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockOwnerId, LockRepo}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -51,9 +51,9 @@ class ClientWorkerImpl(
                       ) extends ClientWorker {
 
   //TODO: read from config
-  val extendLockDuration = Duration(1, TimeUnit.SECONDS)
+  val extendLockDuration =  org.joda.time.Duration.standardSeconds(1)
 
-  override def processNotificationsFor(csid: ClientSubscriptionId): Future[Unit] /*(implicit hc: HeaderCarrier) ?????*/ = {
+  override def processNotificationsFor(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId): Future[Unit] /*(implicit hc: HeaderCarrier) ?????*/ = {
     //implicit HeaderCarrier required for ApiSubscriptionFieldsConnector
     //however looking at api-subscription-fields service I do not think it is required so keep new HeaderCarrier() for now
     implicit val hc = HeaderCarrier()
@@ -62,7 +62,7 @@ class ClientWorkerImpl(
       override def run() = {
         logger.debug("TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! ")
 
-        lockRepo.refreshLock(csid, extendLockDuration).map{ refreshedOk =>
+        lockRepo.refreshLock(csid, lockOwnerId, extendLockDuration).map{ refreshedOk =>
           if (!refreshedOk) {
             //TODO: how to stop all processing at this point?
             val ex = new IllegalArgumentException("Unable to refresh lock")

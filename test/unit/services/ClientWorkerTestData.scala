@@ -20,10 +20,12 @@ import java.util.UUID
 
 import org.joda.time.DateTime
 import uk.gov.hmrc.customs.notification.domain._
+import uk.gov.hmrc.customs.notification.repo.LockOwnerId
 
 object ClientWorkerTestData {
-  val CsidOne = ClientSubscriptionId(UUID.fromString("eaca01f9-ec3b-4ede-b263-61b626dde231"))
+  lazy val CsidOne = ClientSubscriptionId(UUID.fromString("eaca01f9-ec3b-4ede-b263-61b626dde231"))
   val CsidTwo = ClientSubscriptionId(UUID.fromString("eaca01f9-ec3b-4ede-b263-61b626dde232"))
+  lazy val CsidOneLockOwnerId = new LockOwnerId(CsidOne.id.toString)
   val HeaderTuples = Seq("h1" -> "v1")
   val Headers = HeaderTuples.map(t => Header(t._1, t._2))
   val PayloadOne = "PAYLOAD_ONE"
