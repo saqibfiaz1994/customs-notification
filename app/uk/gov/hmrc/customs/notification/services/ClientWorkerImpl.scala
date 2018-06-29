@@ -35,7 +35,6 @@ case class SendException(cause: Throwable) extends Exception(cause)
 
 /*
 TODO
-- integrate with latest on branch
 - sort out HeaderCarrier requirement - needed for logging - or change logging API
 - wire in dummy config service case class that has lockRefresh delay AND simulated processing delay (for unit tests)
  */
@@ -74,14 +73,14 @@ class ClientWorkerImpl(
     })
 
     // cleanup timer
-    process(csid).onComplete { _ =>
+    val eventualyProcess = process(csid)
+    eventualyProcess.onComplete { _ =>
       logger.debug(s"XXXXXXXXXXXXXXXXXXX about to cancel timer")
       val cancelled = timer.cancel()
       logger.debug(s"XXXXXXXXXXXXXXXXXXX cancelled = $cancelled")
     }
 
-    //TODO: revisit after timer lifecycle management has been refined
-    Future.successful(())
+    eventualyProcess
   }
 
   private def process(csid: ClientSubscriptionId)(implicit hc: HeaderCarrier): Future[Unit] = {
