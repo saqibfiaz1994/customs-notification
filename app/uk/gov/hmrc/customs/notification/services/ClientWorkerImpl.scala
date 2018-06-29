@@ -35,8 +35,9 @@ case class SendException(cause: Throwable) extends Exception(cause)
 
 /*
 TODO
+- add conversationId to model
+- use MongoObjectId provided by repo when available
 - sort out HeaderCarrier requirement - needed for logging - or change logging API
-- wire in dummy config service case class that has lockRefresh delay AND simulated processing delay (for unit tests)
 - go through TODOs
 DONE
  */
@@ -52,8 +53,7 @@ class ClientWorkerImpl(
                         logger: NotificationLogger
                       ) extends ClientWorker {
 
-  //TODO: read from config
-  val extendLockDuration =  org.joda.time.Duration.standardSeconds(config.pushLockRefreshDurationInSeconds)
+  private val extendLockDuration =  org.joda.time.Duration.standardSeconds(config.pushLockRefreshDurationInSeconds)
 
   //TODO: remove
   protected def simulatedDelayInMilliSeconds = 0
@@ -69,7 +69,10 @@ class ClientWorkerImpl(
 
         lockRepo.refreshLock(csid, lockOwnerId, extendLockDuration).map{ refreshedOk =>
           if (!refreshedOk) {
+            //---------------------------------------------------------------
             //TODO: how to stop all processing at this point?
+            //TODO: this one is a biggie
+            //---------------------------------------------------------------
             val ex = new IllegalArgumentException("Unable to refresh lock")
             logger.error(ex.getMessage) //TODO: extend logging API
             throw ex
@@ -125,7 +128,7 @@ class ClientWorkerImpl(
   private def eventualPublicNotificationRequest(csid: ClientSubscriptionId, cn: ClientNotification)(implicit hc: HeaderCarrier): Future[PublicNotificationRequest] = {
     val futureMaybeCallbackDetails: Future[Option[DeclarantCallbackData]] = callbackDetailsConnector.getClientData(csid.id.toString)
     futureMaybeCallbackDetails.map{ maybeCallbackDetails =>
-      val declarantCallbackData = maybeCallbackDetails.getOrElse(throw new IllegalStateException("TODO: figure out error handling"))
+      val declarantCallbackData = maybeCallbackDetails.getOrElse(throw new IllegalStateException("No callback details found"))
       val request = publicNotificationRequest(csid, declarantCallbackData, cn)
       request
     }
