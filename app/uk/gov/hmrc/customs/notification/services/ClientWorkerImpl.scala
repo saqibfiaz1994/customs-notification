@@ -70,14 +70,14 @@ class ClientWorkerImpl(
     })
 
     // cleanup timer
-    val eventualyProcess = process(csid)
-    eventualyProcess.onComplete { _ => // always cancel timer
+    val eventuallyProcess = process(csid)
+    eventuallyProcess.onComplete { _ => // always cancel timer
       logger.debug(s"about to cancel timer")
       val cancelled = timer.cancel()
       logger.debug(s"cancelled = $cancelled")
     }
 
-    eventualyProcess
+    eventuallyProcess
   }
 
   private def refreshLock(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId)(implicit hc: HeaderCarrier): Future[Unit] = {
