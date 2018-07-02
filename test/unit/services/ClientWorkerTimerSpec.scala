@@ -30,14 +30,19 @@ import uk.gov.hmrc.customs.notification.services.ClientWorkerImpl
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import unit.services.ClientWorkerTestData._
+import util.MockitoPassByNameHelper.PassByNameVerifier
+import util.TestData._
 
 import scala.concurrent.Future
 
 class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually with BeforeAndAfterAll {
 
-  val actorSystem = ActorSystem("TestActorSystem")
-  val four = 4
-  val fiveSeconds = 5000
+  private val actorSystem = ActorSystem("TestActorSystem")
+  private val four = 4
+  private val five = 5
+  private val oneAndAHalfSecondsProcessingDelay = 1500
+  private val fiveSecondsProcessingDelay = 5000
+  private val lockRefreshDurationInSeconds = 1
 
   trait SetUp {
 
@@ -46,27 +51,37 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
     val mockPushConnector = mock[PublicNotificationServiceConnector]
     val mockPullConnector = mock[NotificationQueueConnector]
     val mockLockRepo = mock[LockRepo]
-    val mockNotificationLogger = mock[NotificationLogger]
+    val mockLogger = mock[NotificationLogger]
     val mockCustomsNotificationConfig = mock[CustomsNotificationConfig]
 
-    val clientWorker = new ClientWorkerImpl (
-      mockCustomsNotificationConfig,
-      actorSystem,
-      mockClientNotificationRepo,
-      mockApiSubscriptionFieldsConnector,
-      mockPushConnector,
-      mockPullConnector,
-      mockLockRepo,
-      mockNotificationLogger
-    ) {
-      override def simulatedDelayInMilliSeconds = fiveSeconds
+    def clientWorkerWithProcessingDelay(milliseconds: Int): ClientWorkerImpl = {
+      val clientWorker = new ClientWorkerImpl (
+        mockCustomsNotificationConfig,
+        actorSystem,
+        mockClientNotificationRepo,
+        mockApiSubscriptionFieldsConnector,
+        mockPushConnector,
+        mockPullConnector,
+        mockLockRepo,
+        mockLogger
+      ) {
+        override def simulatedDelayInMilliSeconds = milliseconds
+      }
+      clientWorker
     }
 
     implicit val implicitHc = HeaderCarrier()
 
-    def eqLockOwnerId(id: LockOwnerId) = ameq[String](id.id).asInstanceOf[LockOwnerId]
+    def eqLockOwnerId(id: LockOwnerId): LockOwnerId = ameq[String](id.id).asInstanceOf[LockOwnerId]
 
-    when(mockCustomsNotificationConfig.pushLockRefreshDurationInSeconds).thenReturn(1)
+    def verifyLogError(msg: String): Unit = {
+      PassByNameVerifier(mockLogger, "error")
+        .withByNameParam(msg)
+        .withParamMatcher(any[HeaderCarrier])
+        .verify()
+    }
+
+    when(mockCustomsNotificationConfig.pushLockRefreshDurationInSeconds).thenReturn(lockRefreshDurationInSeconds)
   }
 
   override protected def afterAll(): Unit = {
@@ -87,7 +102,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
 
-        val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
+        val actual = await(clientWorkerWithProcessingDelay(fiveSecondsProcessingDelay).processNotificationsFor(CsidOne, CsidOneLockOwnerId))
 
         actual shouldBe (())
         eventually{
@@ -95,10 +110,55 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
           verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL") // TODO: check for equality on request
           verify(mockLockRepo, times(four)).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
         }
-
-//        Thread.sleep(5000)
       }
     }
+
+    "In unhappy path" should {
+      "log error when refreshLock returns false, but carry on processing notifications" in new SetUp {
+
+        when(mockLockRepo.refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])).thenReturn(Future.successful(false))
+        when(mockClientNotificationRepo.fetch(CsidOne))
+          .thenReturn(Future.successful(List(ClientNotificationOne)))
+        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
+          .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
+        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
+        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
+          .thenReturn(Future.successful(()))
+
+        val actual = await(clientWorkerWithProcessingDelay(oneAndAHalfSecondsProcessingDelay).processNotificationsFor(CsidOne, CsidOneLockOwnerId))
+
+        actual shouldBe (())
+        eventually{
+          verifyLogError("Unable to refresh lock")
+          verify(mockPushConnector).send(any[PublicNotificationRequest])
+          verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")
+          verify(mockLockRepo).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
+        }
+      }
+
+      "log error when refreshLock throws an exception, but carry on processing notifications" in new SetUp {
+
+        when(mockLockRepo.refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])).thenReturn(Future.failed(emulatedServiceFailure))
+        when(mockClientNotificationRepo.fetch(CsidOne))
+          .thenReturn(Future.successful(List(ClientNotificationOne)))
+        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
+          .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
+        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
+        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
+          .thenReturn(Future.successful(()))
+
+        val actual = await(clientWorkerWithProcessingDelay(oneAndAHalfSecondsProcessingDelay).processNotificationsFor(CsidOne, CsidOneLockOwnerId))
+
+        actual shouldBe (())
+        eventually{
+          verifyLogError(emulatedServiceFailure.getMessage)
+          verify(mockPushConnector).send(any[PublicNotificationRequest])
+          verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")
+          verify(mockLockRepo).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
+        }
+      }
+    }
+
   }
 
 }

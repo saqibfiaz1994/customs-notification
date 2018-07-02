@@ -62,32 +62,39 @@ class ClientWorkerImpl(
 
     val timer = actorSystem.scheduler.schedule(Duration(1, TimeUnit.SECONDS), Duration(1, TimeUnit.SECONDS), new Runnable {
       override def run() = {
-        logger.debug("TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! TIMER! ")
-
-        lockRepo.refreshLock(csid, lockOwnerId, extendLockDuration).map{ refreshedOk =>
-          if (!refreshedOk) {
-            //---------------------------------------------------------------
-            //TODO: how to stop all processing at this point?
-            //TODO: this one is a biggie
-            //---------------------------------------------------------------
-            val ex = new IllegalArgumentException("Unable to refresh lock")
-            logger.error(ex.getMessage) //TODO: extend logging API
-            throw ex
-          }
-        } // TODO: what about failed future?
+        refreshLock(csid, lockOwnerId)
       }
     })
 
     // cleanup timer
     val eventualyProcess = process(csid)
-    eventualyProcess.onComplete { _ =>
-      logger.debug(s"XXXXXXXXXXXXXXXXXXX about to cancel timer")
+    eventualyProcess.onComplete { _ => // always cancel timer
+      logger.debug(s"about to cancel timer")
       val cancelled = timer.cancel()
-      logger.debug(s"XXXXXXXXXXXXXXXXXXX cancelled = $cancelled")
+      logger.debug(s"cancelled = $cancelled")
     }
 
     eventualyProcess
   }
+
+  private def refreshLock(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId)(implicit hc: HeaderCarrier): Future[Unit] = {
+    lockRepo.refreshLock(csid, lockOwnerId, extendLockDuration).map{ refreshedOk =>
+      if (!refreshedOk) {
+        val ex = new IllegalStateException("Unable to refresh lock")
+        throw ex
+      }
+    }.recover{
+      // If refresh of the lock fails there is nothing much we can do apart from logging the error
+      // It is unsafe to abort the notification processing as this could lead to the notifications
+      // database being in an inconsistent state eg notification could have been sent OK, but if
+      // we abort processing before notification is deleted then client could receive duplicate
+      // notifications
+      case e: Exception =>
+        val msg = e.getMessage
+        logger.error(msg) //TODO: extend logging API
+    }
+  }
+
 
   private def process(csid: ClientSubscriptionId)(implicit hc: HeaderCarrier): Future[Unit] = {
 
@@ -96,7 +103,7 @@ class ClientWorkerImpl(
       Thread.sleep(simulatedDelayInMilliSeconds)
     }
 
-    logger.info("Whoo Hooo!")
+    logger.info(s"About to process notifications")
 
     (for {
       clientNotifications <- repo.fetch(csid)

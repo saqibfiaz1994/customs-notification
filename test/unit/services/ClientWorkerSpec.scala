@@ -35,10 +35,6 @@ import util.TestData.emulatedServiceFailure
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
-/*
-TODO:
-callBack -> None
- */
 class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
 
   trait SetUp {
@@ -106,7 +102,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
 
         actual shouldBe (())
         eventually{
-          verifyLogInfo("Whoo Hooo!")
+          verifyLogInfo(s"About to process notifications")
           verify(mockPushConnector).send(ameq(pnrOne))
           verify(mockPushConnector).send(ameq(pnrTwo))
           verify(mockClientNotificationRepo, times(2)).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL") // TODO: check for equality on request
@@ -202,7 +198,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
           verify(mockClientNotificationRepo, never()).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")
           verify(mockCancelable).cancel()
           verifyZeroInteractions(mockLockRepo)
-          verifyLogInfo("Whoo Hooo!")
+          verifyLogInfo("About to process notifications")
           verifyLogError("Error pushing notification")
           verify(mockCancelable).cancel()
           verify(mockPullConnector, times(2)).enqueue(any[PublicNotificationRequest])
