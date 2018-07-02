@@ -23,7 +23,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.customs.notification.connectors.{ApiSubscriptionFieldsConnector, NotificationQueueConnector, PublicNotificationServiceConnector}
-import uk.gov.hmrc.customs.notification.domain.{CustomsNotificationConfig, PublicNotificationRequest}
+import uk.gov.hmrc.customs.notification.domain.{CustomsNotificationConfig, PublicNotificationRequest, PushNotificationConfig}
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockOwnerId, LockRepo}
 import uk.gov.hmrc.customs.notification.services.ClientWorkerImpl
@@ -42,7 +42,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
   private val five = 5
   private val oneAndAHalfSecondsProcessingDelay = 1500
   private val fiveSecondsProcessingDelay = 5000
-  private val lockRefreshDurationInSeconds = 1
+  private val oneSecondProcessingDelay = 1000
 
   trait SetUp {
 
@@ -53,9 +53,10 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
     val mockLockRepo = mock[LockRepo]
     val mockLogger = mock[NotificationLogger]
     val mockCustomsNotificationConfig = mock[CustomsNotificationConfig]
+    val mockPushNotificationConfig = mock[PushNotificationConfig]
 
     def clientWorkerWithProcessingDelay(milliseconds: Int): ClientWorkerImpl = {
-      val clientWorker = new ClientWorkerImpl (
+      lazy val clientWorker = new ClientWorkerImpl (
         mockCustomsNotificationConfig,
         actorSystem,
         mockClientNotificationRepo,
@@ -81,7 +82,8 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         .verify()
     }
 
-    when(mockCustomsNotificationConfig.pushLockRefreshDurationInSeconds).thenReturn(lockRefreshDurationInSeconds)
+    when(mockCustomsNotificationConfig.pushNotificationConfig).thenReturn(mockPushNotificationConfig)
+    when(mockPushNotificationConfig.lockRefreshDurationInMilliseconds).thenReturn(oneSecondProcessingDelay)
   }
 
   override protected def afterAll(): Unit = {
