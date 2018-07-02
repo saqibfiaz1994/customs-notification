@@ -37,6 +37,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
 
+  private val lockDurationInMilliseconds = 1000
+  private val lockRefreshDurationInMilliseconds = 800
+
   trait SetUp {
 
     val mockActorSystem = mock[ActorSystem]
@@ -85,7 +88,8 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
     }
 
     when(mockCustomsNotificationConfig.pushNotificationConfig).thenReturn(mockPushNotificationConfig)
-    when(mockPushNotificationConfig.lockRefreshDurationInMilliseconds).thenReturn(1000)
+    when(mockPushNotificationConfig.lockRefreshDurationInMilliseconds).thenReturn(lockRefreshDurationInMilliseconds)
+    when(mockPushNotificationConfig.lockDurationInMilliseconds).thenReturn(lockDurationInMilliseconds)
   }
 
   "ClientWorker" can {

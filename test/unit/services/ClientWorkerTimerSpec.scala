@@ -38,11 +38,10 @@ import scala.concurrent.Future
 class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually with BeforeAndAfterAll {
 
   private val actorSystem = ActorSystem("TestActorSystem")
-  private val four = 4
-  private val five = 5
   private val oneAndAHalfSecondsProcessingDelay = 1500
   private val fiveSecondsProcessingDelay = 5000
-  private val oneSecondProcessingDelay = 1000
+  private val lockDurationInMilliseconds = 1000
+  private val lockRefreshDurationInMilliseconds = 800
 
   trait SetUp {
 
@@ -83,7 +82,8 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
     }
 
     when(mockCustomsNotificationConfig.pushNotificationConfig).thenReturn(mockPushNotificationConfig)
-    when(mockPushNotificationConfig.lockRefreshDurationInMilliseconds).thenReturn(oneSecondProcessingDelay)
+    when(mockPushNotificationConfig.lockRefreshDurationInMilliseconds).thenReturn(lockRefreshDurationInMilliseconds)
+    when(mockPushNotificationConfig.lockDurationInMilliseconds).thenReturn(lockDurationInMilliseconds)
   }
 
   override protected def afterAll(): Unit = {
@@ -110,7 +110,8 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         eventually{
           verify(mockPushConnector).send(any[PublicNotificationRequest]) // TODO: check for equality on request
           verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL") // TODO: check for equality on request
-          verify(mockLockRepo, times(four)).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
+          val expectedLockRefreshCount = fiveSecondsProcessingDelay / lockRefreshDurationInMilliseconds
+          verify(mockLockRepo, times(expectedLockRefreshCount)).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
         }
       }
     }

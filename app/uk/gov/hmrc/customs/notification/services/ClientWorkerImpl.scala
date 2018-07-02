@@ -51,6 +51,8 @@ class ClientWorkerImpl(
                       ) extends ClientWorker {
 
   private val extendLockDuration =  org.joda.time.Duration.millis(config.pushNotificationConfig.lockRefreshDurationInMilliseconds)
+  private val refreshInterval = Duration(config.pushNotificationConfig.lockRefreshDurationInMilliseconds, TimeUnit.MILLISECONDS)
+  private val duration = Duration(config.pushNotificationConfig.lockRefreshDurationInMilliseconds, TimeUnit.MILLISECONDS)
 
   //TODO: remove
   protected def simulatedDelayInMilliSeconds = 0
@@ -60,8 +62,7 @@ class ClientWorkerImpl(
     //however looking at api-subscription-fields service I do not think it is required so keep new HeaderCarrier() for now
     implicit val hc = HeaderCarrier()
 
-    val duration = Duration(config.pushNotificationConfig.lockRefreshDurationInMilliseconds, TimeUnit.MILLISECONDS)
-    val timer = actorSystem.scheduler.schedule(duration, duration, new Runnable {
+    val timer = actorSystem.scheduler.schedule(refreshInterval, duration, new Runnable {
 
       override def run() = {
         refreshLock(csid, lockOwnerId)
