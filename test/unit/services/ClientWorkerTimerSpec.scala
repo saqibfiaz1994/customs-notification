@@ -88,7 +88,6 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
 
     when(mockCustomsNotificationConfig.pushNotificationConfig).thenReturn(mockPushNotificationConfig)
     when(mockPushNotificationConfig.lockRefreshDurationInMilliseconds).thenReturn(lockRefreshDurationInMilliseconds)
-    when(mockPushNotificationConfig.lockDurationInMilliseconds).thenReturn(lockDurationInMilliseconds)
   }
 
   override protected def afterAll(): Unit = {
