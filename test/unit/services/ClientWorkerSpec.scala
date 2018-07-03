@@ -18,6 +18,7 @@ package unit.services
 
 import akka.actor.{ActorSystem, Cancellable, Scheduler}
 import org.mockito.ArgumentMatchers.{any, eq => ameq}
+import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
@@ -101,18 +102,22 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
+        when(mockClientNotificationRepo.delete(ameq(PayloadOne))) //TODO: using payload as primary key as not in model yet
           .thenReturn(Future.successful(()))
+        when(mockClientNotificationRepo.delete(ameq(PayloadTwo))) //TODO: using payload as primary key as not in model yet
+          .thenReturn(Future.successful(()))
+        val ordered = Mockito.inOrder(mockPushConnector, mockClientNotificationRepo, mockPushConnector, mockClientNotificationRepo, mockCancelable)
 
         val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
 
         actual shouldBe (())
         eventually{
           verifyLogInfo(s"About to process notifications")
-          verify(mockPushConnector).send(ameq(pnrOne))
-          verify(mockPushConnector).send(ameq(pnrTwo))
-          verify(mockClientNotificationRepo, times(2)).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")
-          verify(mockCancelable).cancel()
+          ordered.verify(mockPushConnector).send(ameq(pnrOne))
+          ordered.verify(mockClientNotificationRepo).delete(PayloadOne)
+          ordered.verify(mockPushConnector).send(ameq(pnrTwo))
+          ordered.verify(mockClientNotificationRepo).delete(PayloadTwo)
+          ordered.verify(mockCancelable).cancel()
           verifyZeroInteractions(mockLockRepo)
           verifyZeroInteractions(mockPullConnector)
         }
@@ -125,11 +130,6 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
         schedulerExpectations()
         when(mockClientNotificationRepo.fetch(CsidOne))
           .thenReturn(Future.failed(emulatedServiceFailure))
-        when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
-          .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
-        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
-          .thenReturn(Future.successful(()))
 
         val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
 
@@ -150,9 +150,6 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
           .thenReturn(List(ClientNotificationOne, ClientNotificationTwo))
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.failed(emulatedServiceFailure))
-        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
-          .thenReturn(Future.successful(()))
 
         val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
 
@@ -172,9 +169,6 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
           .thenReturn(List(ClientNotificationOne, ClientNotificationTwo))
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(None))
-        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
-          .thenReturn(Future.successful(()))
 
         val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
 

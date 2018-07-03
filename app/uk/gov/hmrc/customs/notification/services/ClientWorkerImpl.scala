@@ -119,7 +119,7 @@ class ClientWorkerImpl(
     for {
       request <- eventualPublicNotificationRequest(csid, cn)
       _ <- pushConnector.send(request)
-      _ <- repo.delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")
+      _ <- repo.delete(cn.notification.payload) //TODO: ADD MONGO OBJECT_ID TO MODEL
     } yield ()
   }
 

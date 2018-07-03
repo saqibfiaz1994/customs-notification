@@ -106,7 +106,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
+        when(mockClientNotificationRepo.delete(ameq(PayloadOne)))
           .thenReturn(Future.successful(()))
 
         val actual = await(clientWorkerWithProcessingDelay(fiveSecondsProcessingDelay).processNotificationsFor(CsidOne, CsidOneLockOwnerId))
@@ -114,7 +114,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         actual shouldBe (())
         eventually{
           verify(mockPushConnector).send(ameq(pnrOne))
-          verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")
+          verify(mockClientNotificationRepo).delete(PayloadOne)
           val expectedLockRefreshCount = fiveSecondsProcessingDelay / lockRefreshDurationInMilliseconds
           verify(mockLockRepo, times(expectedLockRefreshCount)).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
         }
@@ -130,7 +130,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
+        when(mockClientNotificationRepo.delete(ameq(PayloadOne)))
           .thenReturn(Future.successful(()))
 
         val actual = await(clientWorkerWithProcessingDelay(oneAndAHalfSecondsProcessingDelay).processNotificationsFor(CsidOne, CsidOneLockOwnerId))
@@ -139,7 +139,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         eventually{
           verifyLogError("Unable to refresh lock")
           verify(mockPushConnector).send(any[PublicNotificationRequest])
-          verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")
+          verify(mockClientNotificationRepo).delete(PayloadOne)
           verify(mockLockRepo).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
         }
       }
@@ -152,7 +152,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
+        when(mockClientNotificationRepo.delete(ameq(PayloadOne)))
           .thenReturn(Future.successful(()))
 
         val actual = await(clientWorkerWithProcessingDelay(oneAndAHalfSecondsProcessingDelay).processNotificationsFor(CsidOne, CsidOneLockOwnerId))
@@ -161,7 +161,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         eventually{
           verifyLogError(emulatedServiceFailure.getMessage)
           verify(mockPushConnector).send(ameq(pnrOne))
-          verify(mockClientNotificationRepo).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")
+          verify(mockClientNotificationRepo).delete(PayloadOne)
           verify(mockLockRepo).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
         }
       }
