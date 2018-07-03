@@ -16,6 +16,8 @@
 
 package unit.services
 
+import java.util.UUID
+
 import akka.actor.ActorSystem
 import org.mockito.ArgumentMatchers.{any, eq => ameq}
 import org.mockito.Mockito._
@@ -77,6 +79,7 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
     implicit val implicitHc = HeaderCarrier()
 
     def eqLockOwnerId(id: LockOwnerId): LockOwnerId = ameq[String](id.id).asInstanceOf[LockOwnerId]
+    def eqClientSubscriptionId(id: ClientSubscriptionId): ClientSubscriptionId = ameq[UUID](id.id).asInstanceOf[ClientSubscriptionId]
 
     def verifyLogError(msg: String): Unit = {
       PassByNameVerifier(mockLogger, "error")
@@ -98,13 +101,13 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
     "In happy path" should {
       "refresh time when elapsed time > time delay duration" in new SetUp {
 
-        when(mockLockRepo.refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])).thenReturn(Future.successful(true))
+        when(mockLockRepo.tryToAcquireOrRenewLock(eqClientSubscriptionId(CsidOne), eqLockOwnerId(CsidOneLockOwnerId) , any[org.joda.time.Duration])).thenReturn(Future.successful(true))
         when(mockClientNotificationRepo.fetch(CsidOne))
           .thenReturn(Future.successful(List(ClientNotificationOne)))
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq(PayloadOne)))
+        when(mockClientNotificationRepo.delete(ameq(ClientNotificationOne)))
           .thenReturn(Future.successful(()))
 
         val actual = await(clientWorkerWithProcessingDelay(fiveSecondsProcessingDelay).processNotificationsFor(CsidOne, CsidOneLockOwnerId))
@@ -112,9 +115,9 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         actual shouldBe (())
         eventually{
           verify(mockPushConnector).send(ameq(pnrOne))
-          verify(mockClientNotificationRepo).delete(PayloadOne)
+          verify(mockClientNotificationRepo).delete(ClientNotificationOne)
           val expectedLockRefreshCount = fiveSecondsProcessingDelay / lockRefreshDurationInMilliseconds
-          verify(mockLockRepo, times(expectedLockRefreshCount)).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
+          verify(mockLockRepo, times(expectedLockRefreshCount)).tryToAcquireOrRenewLock(eqClientSubscriptionId(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
         }
       }
     }
@@ -122,13 +125,13 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
     "In unhappy path" should {
       "log error when refreshLock returns false, but carry on processing notifications" in new SetUp {
 
-        when(mockLockRepo.refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])).thenReturn(Future.successful(false))
+        when(mockLockRepo.tryToAcquireOrRenewLock(eqClientSubscriptionId(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])).thenReturn(Future.successful(false))
         when(mockClientNotificationRepo.fetch(CsidOne))
           .thenReturn(Future.successful(List(ClientNotificationOne)))
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq(PayloadOne)))
+        when(mockClientNotificationRepo.delete(ameq(ClientNotificationOne)))
           .thenReturn(Future.successful(()))
 
         val actual = await(clientWorkerWithProcessingDelay(oneAndAHalfSecondsProcessingDelay).processNotificationsFor(CsidOne, CsidOneLockOwnerId))
@@ -137,20 +140,20 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         eventually{
           verifyLogError("Unable to refresh lock")
           verify(mockPushConnector).send(any[PublicNotificationRequest])
-          verify(mockClientNotificationRepo).delete(PayloadOne)
-          verify(mockLockRepo).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
+          verify(mockClientNotificationRepo).delete(ClientNotificationOne)
+          verify(mockLockRepo).tryToAcquireOrRenewLock(eqClientSubscriptionId(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
         }
       }
 
       "log error when refreshLock throws an exception, but carry on processing notifications" in new SetUp {
 
-        when(mockLockRepo.refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])).thenReturn(Future.failed(emulatedServiceFailure))
+        when(mockLockRepo.tryToAcquireOrRenewLock(eqClientSubscriptionId(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])).thenReturn(Future.failed(emulatedServiceFailure))
         when(mockClientNotificationRepo.fetch(CsidOne))
           .thenReturn(Future.successful(List(ClientNotificationOne)))
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq(PayloadOne)))
+        when(mockClientNotificationRepo.delete(ameq(ClientNotificationOne)))
           .thenReturn(Future.successful(()))
 
         val actual = await(clientWorkerWithProcessingDelay(oneAndAHalfSecondsProcessingDelay).processNotificationsFor(CsidOne, CsidOneLockOwnerId))
@@ -159,8 +162,8 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
         eventually{
           verifyLogError(emulatedServiceFailure.getMessage)
           verify(mockPushConnector).send(ameq(pnrOne))
-          verify(mockClientNotificationRepo).delete(PayloadOne)
-          verify(mockLockRepo).refreshLock(ameq(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
+          verify(mockClientNotificationRepo).delete(ClientNotificationOne)
+          verify(mockLockRepo).tryToAcquireOrRenewLock(eqClientSubscriptionId(CsidOne), eqLockOwnerId(CsidOneLockOwnerId), any[org.joda.time.Duration])
         }
       }
     }

@@ -32,11 +32,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /*
 TODO
-- add conversationId to model
-- use MongoObjectId provided by repo when available
 - sort out HeaderCarrier requirement - needed for logging - or change logging API
 - go through TODOs
 DONE
+- add conversationId to model
+- use CN to delete
  */
 @Singleton
 class ClientWorkerImpl(
@@ -77,7 +77,7 @@ class ClientWorkerImpl(
   }
 
   private def refreshLock(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId)(implicit hc: HeaderCarrier): Future[Unit] = {
-    lockRepo.refreshLock(csid, lockOwnerId, extendLockDuration).map{ refreshedOk =>
+    lockRepo.tryToAcquireOrRenewLock(csid, lockOwnerId, extendLockDuration).map{ refreshedOk =>
       if (!refreshedOk) {
         val ex = new IllegalStateException("Unable to refresh lock")
         throw ex
@@ -119,7 +119,7 @@ class ClientWorkerImpl(
     for {
       request <- eventualPublicNotificationRequest(csid, cn)
       _ <- pushConnector.send(request)
-      _ <- repo.delete(cn.notification.payload) //TODO: ADD MONGO OBJECT_ID TO MODEL
+      _ <- repo.delete(cn) //TODO: ADD MONGO OBJECT_ID TO MODEL
     } yield ()
   }
 
@@ -142,8 +142,8 @@ class ClientWorkerImpl(
       PublicNotificationRequestBody(
         declarantCallbackData.callbackUrl,
         declarantCallbackData.securityToken,
-        "TODO_ADD_CONVERSATION_ID_TO_MODEL",
-        cn.notification.headers.map(t => Header(t._1, t._2)),
+        cn.notification.conversationId.id.toString,
+        cn.notification.headers,
         cn.notification.payload
       ))
   }

@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.customs.notification.connectors.{ApiSubscriptionFieldsConnector, NotificationQueueConnector, PublicNotificationServiceConnector}
-import uk.gov.hmrc.customs.notification.domain.{CustomsNotificationConfig, PublicNotificationRequest, PushNotificationConfig}
+import uk.gov.hmrc.customs.notification.domain.{ClientNotification, CustomsNotificationConfig, PublicNotificationRequest, PushNotificationConfig}
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockRepo}
 import uk.gov.hmrc.customs.notification.services.ClientWorkerImpl
@@ -102,9 +102,9 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq(PayloadOne))) //TODO: using payload as primary key as not in model yet
+        when(mockClientNotificationRepo.delete(ameq(ClientNotificationOne)))
           .thenReturn(Future.successful(()))
-        when(mockClientNotificationRepo.delete(ameq(PayloadTwo))) //TODO: using payload as primary key as not in model yet
+        when(mockClientNotificationRepo.delete(ameq(ClientNotificationTwo)))
           .thenReturn(Future.successful(()))
         val ordered = Mockito.inOrder(mockPushConnector, mockClientNotificationRepo, mockPushConnector, mockClientNotificationRepo, mockCancelable)
 
@@ -114,9 +114,9 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
         eventually{
           verifyLogInfo(s"About to process notifications")
           ordered.verify(mockPushConnector).send(ameq(pnrOne))
-          ordered.verify(mockClientNotificationRepo).delete(PayloadOne)
+          ordered.verify(mockClientNotificationRepo).delete(ClientNotificationOne)
           ordered.verify(mockPushConnector).send(ameq(pnrTwo))
-          ordered.verify(mockClientNotificationRepo).delete(PayloadTwo)
+          ordered.verify(mockClientNotificationRepo).delete(ClientNotificationTwo)
           ordered.verify(mockCancelable).cancel()
           verifyZeroInteractions(mockLockRepo)
           verifyZeroInteractions(mockPullConnector)
@@ -195,7 +195,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
 
         actual shouldBe (())
         eventually{
-          verify(mockClientNotificationRepo, never()).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")
+          verify(mockClientNotificationRepo, never()).delete(any[ClientNotification])
           verify(mockCancelable).cancel()
           verifyZeroInteractions(mockLockRepo)
           verifyLogInfo("About to process notifications")

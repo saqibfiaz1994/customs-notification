@@ -25,22 +25,22 @@ import uk.gov.hmrc.customs.notification.repo.LockOwnerId
 object ClientWorkerTestData {
   lazy val CsidOne = ClientSubscriptionId(UUID.fromString("eaca01f9-ec3b-4ede-b263-61b626dde231"))
   val CsidTwo = ClientSubscriptionId(UUID.fromString("eaca01f9-ec3b-4ede-b263-61b626dde232"))
+  val ConversationIdOne = ConversationId(UUID.fromString("caca01f9-ec3b-4ede-b263-61b626dde231"))
+  val ConversationIdTwo = ConversationId(UUID.fromString("caca01f9-ec3b-4ede-b263-61b626dde232"))
   lazy val CsidOneLockOwnerId = new LockOwnerId(CsidOne.id.toString)
-  val HeaderTuples = Seq("h1" -> "v1")
-  val Headers = HeaderTuples.map(t => Header(t._1, t._2))
+  val Headers = Seq(Header("h1", "v1"))
   val PayloadOne = "PAYLOAD_ONE"
   val PayloadTwo = "PAYLOAD_TWO"
   val ContentType = "CONTENT_TYPE"
-  val NotificationOne = Notification(HeaderTuples, PayloadOne, ContentType)
-  val NotificationTwo = Notification(HeaderTuples, PayloadTwo, ContentType)
+  val NotificationOne = Notification(ConversationIdOne, Headers, PayloadOne, ContentType)
+  val NotificationTwo = Notification(ConversationIdTwo, Headers, PayloadTwo, ContentType)
   val TimeStampOne = DateTime.now
   val TimeStampTwo = TimeStampOne.plus(1000) //TODO
-  val ClientNotificationOne = ClientNotification(CsidOne, NotificationOne, TimeStampOne)
-  val ClientNotificationTwo = ClientNotification(CsidOne, NotificationTwo, TimeStampTwo)
+  val ClientNotificationOne = ClientNotification(CsidOne, NotificationOne, Some(TimeStampOne))
+  val ClientNotificationTwo = ClientNotification(CsidOne, NotificationTwo, Some(TimeStampTwo))
   val DeclarantCallbackDataOne = DeclarantCallbackData("URL", "SECURITY_TOKEN")
-  val ConversationId = "TODO_ADD_CONVERSATION_ID_TO_MODEL"
-  val pnrOne  =PublicNotificationRequest(CsidOne.id.toString, PublicNotificationRequestBody("URL", "SECURITY_TOKEN", ConversationId, Headers, PayloadOne))
-  val pnrTwo  =PublicNotificationRequest(CsidOne.id.toString, PublicNotificationRequestBody("URL", "SECURITY_TOKEN", ConversationId, Headers, PayloadTwo))
+  val pnrOne = PublicNotificationRequest(CsidOne.id.toString, PublicNotificationRequestBody("URL", "SECURITY_TOKEN", ConversationIdOne.id.toString, Headers, PayloadOne))
+  val pnrTwo = PublicNotificationRequest(CsidOne.id.toString, PublicNotificationRequestBody("URL", "SECURITY_TOKEN", ConversationIdTwo.id.toString, Headers, PayloadTwo))
 }
 
 
