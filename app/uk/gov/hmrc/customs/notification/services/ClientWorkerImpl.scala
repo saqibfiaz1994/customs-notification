@@ -51,18 +51,14 @@ class ClientWorkerImpl(
                       ) extends ClientWorker {
 
   private val extendLockDuration =  org.joda.time.Duration.millis(config.pushNotificationConfig.lockRefreshDurationInMilliseconds)
-  private val refreshInterval = Duration(config.pushNotificationConfig.lockRefreshDurationInMilliseconds, TimeUnit.MILLISECONDS)
-  private val duration = Duration(config.pushNotificationConfig.lockRefreshDurationInMilliseconds, TimeUnit.MILLISECONDS)
-
-  //TODO: remove
-  protected def simulatedDelayInMilliSeconds = 0
+  private val refreshDuration = Duration(config.pushNotificationConfig.lockRefreshDurationInMilliseconds, TimeUnit.MILLISECONDS)
 
   override def processNotificationsFor(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId): Future[Unit] /*(implicit hc: HeaderCarrier) ?????*/ = {
     //implicit HeaderCarrier required for ApiSubscriptionFieldsConnector
     //however looking at api-subscription-fields service I do not think it is required so keep new HeaderCarrier() for now
     implicit val hc = HeaderCarrier()
 
-    val timer = actorSystem.scheduler.schedule(refreshInterval, duration, new Runnable {
+    val timer = actorSystem.scheduler.schedule(refreshDuration, refreshDuration, new Runnable {
 
       override def run() = {
         refreshLock(csid, lockOwnerId)
@@ -71,10 +67,10 @@ class ClientWorkerImpl(
 
     // cleanup timer
     val eventuallyProcess = process(csid)
-    eventuallyProcess.onComplete { _ => // always cancel timer
+    eventuallyProcess.onComplete { _ => // always cancel timer ie for both Success and Failure cases
       logger.debug(s"about to cancel timer")
       val cancelled = timer.cancel()
-      logger.debug(s"cancelled = $cancelled")
+      logger.debug(s"timer cancelled=$cancelled, timer.isCancelled=${timer.isCancelled}")
     }
 
     eventuallyProcess
@@ -99,12 +95,7 @@ class ClientWorkerImpl(
   }
 
 
-  private def process(csid: ClientSubscriptionId)(implicit hc: HeaderCarrier): Future[Unit] = {
-
-    //TODO: remove - only used by timer integration test
-    scala.concurrent.blocking {
-      Thread.sleep(simulatedDelayInMilliSeconds)
-    }
+  protected def process(csid: ClientSubscriptionId)(implicit hc: HeaderCarrier): Future[Unit] = {
 
     logger.info(s"About to process notifications")
 

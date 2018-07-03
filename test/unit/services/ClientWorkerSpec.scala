@@ -100,7 +100,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
           .thenReturn(Future.successful(List(ClientNotificationOne, ClientNotificationTwo)), Future.successful(List()))
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
-        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
+        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
 
@@ -111,7 +111,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
           verifyLogInfo(s"About to process notifications")
           verify(mockPushConnector).send(ameq(pnrOne))
           verify(mockPushConnector).send(ameq(pnrTwo))
-          verify(mockClientNotificationRepo, times(2)).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL") // TODO: check for equality on request
+          verify(mockClientNotificationRepo, times(2)).delete("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")
           verify(mockCancelable).cancel()
           verifyZeroInteractions(mockLockRepo)
           verifyZeroInteractions(mockPullConnector)
@@ -127,7 +127,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
           .thenReturn(Future.failed(emulatedServiceFailure))
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
-        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
+        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
 
@@ -150,7 +150,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
           .thenReturn(List(ClientNotificationOne, ClientNotificationTwo))
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.failed(emulatedServiceFailure))
-        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
+        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
 
@@ -172,7 +172,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
           .thenReturn(List(ClientNotificationOne, ClientNotificationTwo))
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(None))
-        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(())) // TODO: compare request
+        when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.successful(()))
         when(mockClientNotificationRepo.delete(ameq("TODO_ADD_MONGO_OBJECT_ID_TO_MODEL")))
           .thenReturn(Future.successful(()))
 
@@ -195,7 +195,7 @@ class ClientWorkerSpec extends UnitSpec with MockitoSugar with Eventually {
         when(mockApiSubscriptionFieldsConnector.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(DeclarantCallbackDataOne)))
         when(mockPushConnector.send(any[PublicNotificationRequest])).thenReturn(Future.failed(emulatedServiceFailure), Future.failed(emulatedServiceFailure))
-        when(mockPullConnector.enqueue(any[PublicNotificationRequest])).thenReturn(Future.successful(mockHttpResponse), Future.successful(mockHttpResponse)) // TODO: compare request
+        when(mockPullConnector.enqueue(any[PublicNotificationRequest])).thenReturn(Future.successful(mockHttpResponse), Future.successful(mockHttpResponse))
 
         val actual = await(clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId))
 
