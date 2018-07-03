@@ -30,14 +30,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-/*
-TODO
-- sort out HeaderCarrier requirement - needed for logging - or change logging API
-- go through TODOs
-DONE
-- add conversationId to model
-- use CN to delete
- */
 @Singleton
 class ClientWorkerImpl(
                         config: CustomsNotificationConfig,
@@ -53,7 +45,8 @@ class ClientWorkerImpl(
   private val extendLockDuration =  org.joda.time.Duration.millis(config.pushNotificationConfig.lockRefreshDurationInMilliseconds)
   private val refreshDuration = Duration(config.pushNotificationConfig.lockRefreshDurationInMilliseconds, TimeUnit.MILLISECONDS)
 
-  override def processNotificationsFor(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId): Future[Unit] /*(implicit hc: HeaderCarrier) ?????*/ = {
+  //TODO: should we pass in HeaderCarrier as an implicit parameter for logging?
+  override def processNotificationsFor(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId): Future[Unit] = {
     //implicit HeaderCarrier required for ApiSubscriptionFieldsConnector
     //however looking at api-subscription-fields service I do not think it is required so keep new HeaderCarrier() for now
     implicit val hc = HeaderCarrier()
@@ -90,7 +83,7 @@ class ClientWorkerImpl(
       // notifications
       case e: Exception =>
         val msg = e.getMessage
-        logger.error(msg) //TODO: extend logging API
+        logger.error(msg) //TODO: extend logging API so that we can log an error on a throwable
     }
   }
 
@@ -119,7 +112,7 @@ class ClientWorkerImpl(
     for {
       request <- eventualPublicNotificationRequest(csid, cn)
       _ <- pushConnector.send(request)
-      _ <- repo.delete(cn) //TODO: ADD MONGO OBJECT_ID TO MODEL
+      _ <- repo.delete(cn)
     } yield ()
   }
 
