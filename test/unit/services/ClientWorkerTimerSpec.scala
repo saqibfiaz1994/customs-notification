@@ -40,7 +40,6 @@ class ClientWorkerTimerSpec extends UnitSpec with MockitoSugar with Eventually w
   private val actorSystem = ActorSystem("TestActorSystem")
   private val oneAndAHalfSecondsProcessingDelay = 1500
   private val fiveSecondsProcessingDelay = 5000
-  private val lockDurationInMilliseconds = 1000
   private val lockRefreshDurationInMilliseconds = 800
 
   trait SetUp {
