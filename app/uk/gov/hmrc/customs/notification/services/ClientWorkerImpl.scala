@@ -94,8 +94,7 @@ class ClientWorkerImpl(
 
     (for {
       clientNotifications <- repo.fetch(csid)
-      cnTuples = clientNotifications.map(cn => (csid, cn))
-      _ <- sequence(cnTuples)(pushClientNotification)
+      _ <- sequence(clientNotifications)(pushClientNotification)
     } yield ())
     .recover {
       case e: Throwable =>
@@ -105,33 +104,30 @@ class ClientWorkerImpl(
 
   }
 
-  private def pushClientNotification(cnTuple: (ClientSubscriptionId, ClientNotification))(implicit hc: HeaderCarrier): Future[Unit] = {
-    val csid = cnTuple._1
-    val cn = cnTuple._2
+  private def pushClientNotification(cn: ClientNotification)(implicit hc: HeaderCarrier): Future[Unit] = {
 
     for {
-      request <- eventualPublicNotificationRequest(csid, cn)
+      request <- eventualPublicNotificationRequest(cn)
       _ <- pushConnector.send(request)
       _ <- repo.delete(cn)
     } yield ()
   }
 
-  private def eventualPublicNotificationRequest(csid: ClientSubscriptionId, cn: ClientNotification)(implicit hc: HeaderCarrier): Future[PublicNotificationRequest] = {
-    val futureMaybeCallbackDetails: Future[Option[DeclarantCallbackData]] = callbackDetailsConnector.getClientData(csid.id.toString)
+  private def eventualPublicNotificationRequest(cn: ClientNotification)(implicit hc: HeaderCarrier): Future[PublicNotificationRequest] = {
+    val futureMaybeCallbackDetails: Future[Option[DeclarantCallbackData]] = callbackDetailsConnector.getClientData(cn.csid.id.toString)
     futureMaybeCallbackDetails.map{ maybeCallbackDetails =>
       val declarantCallbackData = maybeCallbackDetails.getOrElse(throw new IllegalStateException("No callback details found"))
-      val request = publicNotificationRequest(csid, declarantCallbackData, cn)
+      val request = publicNotificationRequest(declarantCallbackData, cn)
       request
     }
   }
 
   private def publicNotificationRequest(
-    csid: ClientSubscriptionId,
     declarantCallbackData: DeclarantCallbackData,
     cn: ClientNotification): PublicNotificationRequest = {
 
     PublicNotificationRequest(
-      csid.id.toString,
+      cn.csid.id.toString,
       PublicNotificationRequestBody(
         declarantCallbackData.callbackUrl,
         declarantCallbackData.securityToken,
@@ -146,8 +142,7 @@ class ClientWorkerImpl(
 
     (for {
       clientNotifications <- repo.fetch(csid)
-      cnTuples = clientNotifications.map(cn => (csid, cn))
-      _ <- sequence(cnTuples)(enqueueClientNotification)
+      _ <- sequence(clientNotifications)(enqueueClientNotification)
     } yield ())
       .recover {
         case e: Exception =>
@@ -155,12 +150,10 @@ class ClientWorkerImpl(
       }
   }
 
-  private def enqueueClientNotification(cnTuple: (ClientSubscriptionId, ClientNotification))(implicit hc: HeaderCarrier): Future[Unit] = {
-    val csid = cnTuple._1
-    val cn = cnTuple._2
+  private def enqueueClientNotification(cn: ClientNotification)(implicit hc: HeaderCarrier): Future[Unit] = {
 
     for {
-      request <- eventualPublicNotificationRequest(csid, cn)
+      request <- eventualPublicNotificationRequest(cn)
       _ <- pullConnector.enqueue(request)
     } yield ()
 
