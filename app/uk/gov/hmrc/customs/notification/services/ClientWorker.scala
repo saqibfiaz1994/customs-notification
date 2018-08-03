@@ -154,6 +154,8 @@ class ClientWorkerImpl @Inject()(
 
       var continue = true
       var counter = 0
+      var currentFetchCount = 0
+      var previousFetchCount = 0
       try {
         while (continue) {
           try {
@@ -162,7 +164,9 @@ class ClientWorkerImpl @Inject()(
               logger.info(s"[clientSubscriptionId=$csid] processing notification record number $counter")
             }
             val seq = blockingFetch(csid)
-            if (seq.isEmpty) {
+            previousFetchCount = currentFetchCount
+            currentFetchCount = seq.size
+            if (seq.isEmpty || currentFetchCount == previousFetchCount) {
               continue = false // the only way to exit loop is if blockingFetch returns empty list or there is a FATAL exception
             }
             else {

@@ -158,6 +158,25 @@ class ClientWorkerImplSpec extends UnitSpec with MockitoSugar with Eventually {
         }
       }
 
+      "exit push processing when fetch returns same size of list twice in a row, when declarant details not found and pull queue fails" in new SetUp {
+        schedulerExpectations()
+        when(mockRepo.fetch(CsidOne))
+          .thenReturn(Future.successful(List(ClientNotificationOne)))
+        when(mockDeclarantDetails.getClientData(ameq(CsidOne.id.toString))(any[HeaderCarrier])).thenReturn(Future.successful(Some(DeclarantCallbackDataOne)), Future.successful(None))
+        when(mockLockRepo.release(eqClientSubscriptionId(CsidOne), eqLockOwnerId(CsidOneLockOwnerId))).thenReturn(Future.successful(()))
+        when(mockPush.send(DeclarantCallbackDataOne, ClientNotificationOne)).thenReturn(false)
+        when(mockPull.send(ameq(ClientNotificationOne))).thenReturn(false)
+
+        private val actual = await( clientWorker.processNotificationsFor(CsidOne, CsidOneLockOwnerId, lockDuration) )
+
+        actual shouldBe (())
+        eventually {
+          verify(mockPull).send(ameq(ClientNotificationOne))
+          verify(mockLockRepo).release(eqClientSubscriptionId(CsidOne), eqLockOwnerId(CsidOneLockOwnerId))
+          verify(mockCancelable).cancel()
+        }
+      }
+
       "enqueue all two notification to pull queue when declarant details are not found for first" in new SetUp {
         schedulerExpectations()
         when(mockRepo.fetch(CsidOne))
