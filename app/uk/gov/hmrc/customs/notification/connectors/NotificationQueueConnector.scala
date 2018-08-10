@@ -18,6 +18,7 @@ package uk.gov.hmrc.customs.notification.connectors
 
 import javax.inject.{Inject, Singleton}
 
+import akka.actor.ActorSystem
 import play.api.http.MimeTypes
 import play.mvc.Http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
 import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames
@@ -28,11 +29,11 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpException, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.Option.empty
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class NotificationQueueConnector @Inject()(http: HttpClient, logger: NotificationLogger, configServices: CustomsNotificationConfig) {
+class NotificationQueueConnector @Inject()(actorSystem: ActorSystem, http: HttpClient, logger: NotificationLogger, configServices: CustomsNotificationConfig) {
+  private implicit val blockingExecutionContext: ExecutionContext = actorSystem.dispatchers.lookup("push-blocking-dispatcher")
 
   //TODO: handle POST failure scenario after Trade Test
   def enqueue(request: ClientNotification): Future[HttpResponse] = {

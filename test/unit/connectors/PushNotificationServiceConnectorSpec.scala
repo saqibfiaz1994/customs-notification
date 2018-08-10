@@ -16,6 +16,7 @@
 
 package unit.connectors
 
+import akka.actor.ActorSystem
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.mockito.{ArgumentCaptor, ArgumentMatchers}
@@ -40,6 +41,7 @@ class PushNotificationServiceConnectorSpec extends UnitSpec with MockitoSugar {
   private val serviceConfigProvider = mock[ServiceConfigProvider]
 
   private val connector = new PushNotificationServiceConnector(
+    ActorSystem.create(),
     mockHttpClient,
     mockNotificationLogger,
     serviceConfigProvider

@@ -18,6 +18,8 @@ package uk.gov.hmrc.customs.notification.connectors
 
 import com.google.inject.Inject
 import javax.inject.Singleton
+
+import akka.actor.ActorSystem
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE}
 import play.api.http.MimeTypes
 import uk.gov.hmrc.customs.api.common.config.ServiceConfigProvider
@@ -27,13 +29,15 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpException, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class PushNotificationServiceConnector @Inject()(http: HttpClient,
+class PushNotificationServiceConnector @Inject()(actorSystem: ActorSystem,
+                                                 http: HttpClient,
                                                  logger: NotificationLogger,
                                                  serviceConfigProvider: ServiceConfigProvider) {
 
+  private implicit val blockingExecutionContext: ExecutionContext = actorSystem.dispatchers.lookup("push-blocking-dispatcher")
   private val outboundHeaders = Seq(
     (ACCEPT, MimeTypes.JSON),
     (CONTENT_TYPE, MimeTypes.JSON))
