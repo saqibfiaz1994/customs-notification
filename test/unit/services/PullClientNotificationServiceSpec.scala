@@ -18,6 +18,7 @@ package unit.services
 
 ;
 
+import akka.actor.ActorSystem
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{any, eq => meq}
 import org.mockito.Mockito._
@@ -38,7 +39,7 @@ class PullClientNotificationServiceSpec extends UnitSpec with MockitoSugar with 
   private val mockPullConnector = mock[NotificationQueueConnector]
   private val mockLogger = mock[CdsLogger]
   private val mockGAConnector = mock[GoogleAnalyticsSenderConnector]
-  private val service = new PullClientNotificationService(mockPullConnector, mockLogger, mockGAConnector)
+  private val service = new PullClientNotificationService(ActorSystem.create, mockPullConnector, mockLogger, mockGAConnector)
   private val mockNotification = mock[ClientNotification]
   private implicit val hc = mock[HeaderCarrier]
   private val someNotification = clientNotification()
