@@ -12,6 +12,7 @@ object AppDependencies {
   private val playReactivemongoVersion = "6.2.0"
   private val mongoLockVersion = "5.1.0"
   private val testScope = "test,it"
+  private val reactiveMongoStreamingVersion = "0.16.0"
 
   val xmlResolver = "xml-resolver" % "xml-resolver" % "1.2"
 
@@ -36,5 +37,7 @@ object AppDependencies {
   val customsApiCommonTests = "uk.gov.hmrc" %% "customs-api-common" % customsApiCommonVersion % testScope classifier "tests"
 
   val reactiveMongoTest = "uk.gov.hmrc" %% "reactivemongo-test" % "3.1.0" % testScope
+
+  val reactiveMongoStreaming = "org.reactivemongo" %% "reactivemongo-akkastream" % reactiveMongoStreamingVersion % testScope
 
 }
