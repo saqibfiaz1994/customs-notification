@@ -18,25 +18,25 @@ package uk.gov.hmrc.customs.notification.connectors
 
 import javax.inject.Singleton
 
+import akka.actor.ActorSystem
 import com.google.inject.Inject
-import play.api.Configuration
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE}
 import play.api.http.MimeTypes
 import play.api.libs.json.Json.parse
-import uk.gov.hmrc.customs.api.common.config.ServiceConfigProvider
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.services.config.ConfigService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class GoogleAnalyticsSenderConnector @Inject()(http: HttpClient,
+class GoogleAnalyticsSenderConnector @Inject()(actorSystem: ActorSystem,
+                                               http: HttpClient,
                                                logger: NotificationLogger,
                                                configService: ConfigService) {
 
+  private implicit val blockingExecutionContext: ExecutionContext = actorSystem.dispatchers.lookup("push-blocking-dispatcher")
 
   private val gaSenderConfigs = configService.googleAnalyticsSenderConfig
 

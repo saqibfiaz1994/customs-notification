@@ -16,6 +16,7 @@
 
 package unit.connectors
 
+import akka.actor.ActorSystem
 import org.mockito.ArgumentMatchers.{eq => meq, _}
 import org.mockito.Mockito._
 import org.mockito.{ArgumentCaptor, ArgumentMatchers}
@@ -57,6 +58,7 @@ class GoogleAnalyticsSenderConnectorSpec extends UnitSpec with MockitoSugar with
     X_CDS_CLIENT_ID_HEADER_NAME -> validFieldsId))
 
   private lazy val connector = new GoogleAnalyticsSenderConnector(
+    ActorSystem.create(),
     mockHttpClient,
     notificationLogger,
     mockConfigService
