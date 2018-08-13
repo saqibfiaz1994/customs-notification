@@ -18,13 +18,19 @@ package integration
 
 import java.util.UUID
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.{Done, NotUsed}
+import akka.stream.scaladsl.{Keep, RunnableGraph, Sink, Source}
 import org.joda.time.{DateTime, DateTimeZone, Seconds}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import org.mockito.Mockito._
+import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import play.api.libs.json.Json
+import reactivemongo.akkastream.State
 import reactivemongo.api.{Cursor, DB}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.JsObjectDocumentWriter
@@ -40,6 +46,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import util.MockitoPassByNameHelper.PassByNameVerifier
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -47,7 +54,8 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
   with BeforeAndAfterAll
   with BeforeAndAfterEach
   with MockitoSugar
-  with MongoSpecSupport  { self =>
+  with MongoSpecSupport
+  with Eventually { self =>
 
   private val validClientSubscriptionId1String: String = "eaca01f9-ec3b-4ede-b263-61b626dde232"
   private val validClientSubscriptionId1UUID = UUID.fromString(validClientSubscriptionId1String)
@@ -135,6 +143,24 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
       .withByNameParam(logText)
       .withParamMatcher(any[HeaderCarrier])
       .verify()
+  }
+
+  "foo" should {
+    "bar" in {
+      implicit val system = ActorSystem()
+      implicit val mater = ActorMaterializer()
+      await(repository.save(client1Notification1))
+      await(repository.save(client1Notification2))
+      await(repository.save(client2Notification1))
+      val x = new Streamer()
+
+      val src: Source[ClientNotification, Future[State]] = x.stream(repository.collection)
+      val sink: Sink[ClientNotification, Future[Done]] = Sink.foreach[ClientNotification](n => println(s"XXXXXXXXXXXXXXXXX: $n"))
+      val dataflow: RunnableGraph[Future[Done]] = src.toMat(sink)(Keep.right)
+//      val dataflow: RunnableGraph[Future[State]] = src.to(sink)
+
+      await(dataflow.run)
+    }
   }
 
   "repository" should {
