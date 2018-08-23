@@ -39,6 +39,7 @@ import uk.gov.hmrc.customs.notification.controllers.CustomMimeType
 import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo._
+import uk.gov.hmrc.customs.notification.services.Streamer
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.LockRepository
 import uk.gov.hmrc.mongo.MongoSpecSupport

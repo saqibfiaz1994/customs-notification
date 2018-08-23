@@ -38,6 +38,6 @@ object AppDependencies {
 
   val reactiveMongoTest = "uk.gov.hmrc" %% "reactivemongo-test" % "3.1.0" % testScope
 
-  val reactiveMongoStreaming = "org.reactivemongo" %% "reactivemongo-akkastream" % reactiveMongoStreamingVersion % testScope
+  val reactiveMongoStreaming = "org.reactivemongo" %% "reactivemongo-akkastream" % reactiveMongoStreamingVersion
 
 }
