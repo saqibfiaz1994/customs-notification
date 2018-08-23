@@ -18,6 +18,7 @@ package uk.gov.hmrc.customs.notification.repo
 
 import javax.inject.{Inject, Singleton}
 
+import akka.stream.scaladsl.Source
 import com.google.inject.ImplementedBy
 import play.api.libs.json.Json
 import reactivemongo.api.Cursor
@@ -29,6 +30,15 @@ import uk.gov.hmrc.customs.notification.logging.LoggingHelper.logMsgPrefix
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.ReactiveRepository
+
+import akka.stream.scaladsl.Source
+import com.google.inject.Singleton
+import play.api.libs.json.{JsObject, JsValue, Json}
+import reactivemongo.play.json.JsObjectDocumentWriter
+import reactivemongo.play.json.collection.JSONCollection
+// ReactiveMongo extensions
+import reactivemongo.akkastream.{AkkaStreamCursor, State, cursorProducer}
+import uk.gov.hmrc.customs.notification.domain.ClientNotification
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -45,7 +55,7 @@ trait ClientNotificationRepo {
   def delete(clientNotification: ClientNotification): Future[Unit]
 }
 
-@Singleton
+//@Singleton
 class ClientNotificationMongoRepo @Inject()(configService: CustomsNotificationConfig,
                                             mongoDbProvider: MongoDbProvider,
                                             lockRepo: LockRepo,
@@ -56,6 +66,10 @@ class ClientNotificationMongoRepo @Inject()(configService: CustomsNotificationCo
     mongo = mongoDbProvider.mongo,
     domainFormat = ClientNotification.clientNotificationJF
   ) with ClientNotificationRepo {
+
+  private implicit val system = akka.actor.ActorSystem("reactivemongo-akkastream")
+  private implicit val materializer = akka.stream.ActorMaterializer.create(system)
+
 
   private implicit val format = ClientNotification.clientNotificationJF
   private lazy implicit val emptyHC: HeaderCarrier = HeaderCarrier()
@@ -91,6 +105,16 @@ class ClientNotificationMongoRepo @Inject()(configService: CustomsNotificationCo
     val selector = Json.obj("csid" -> csid.id)
     val sortOrder = Json.obj("timeReceived" -> 1)
     collection.find(selector).sort(sortOrder).cursor().collect[List](maxDocs = configService.pushNotificationConfig.maxRecordsToFetch, Cursor.FailOnError[List[ClientNotification]]())
+  }
+
+  // client can limit max records to process by keeping a count and terminating on max
+  def fetch2(csid: ClientSubscriptionId): (Source[ClientNotification, Future[State]]) = {
+    notificationLogger.debug(s"fetching clientNotification(s) with csid: ${csid.id.toString}")
+    val selector = Json.obj("csid" -> csid.id)
+    val sortOrder = Json.obj("timeReceived" -> 1)
+    val cursor: AkkaStreamCursor[ClientNotification] = collection.find(selector).sort(sortOrder).cursor[ClientNotification]()
+    val src: Source[ClientNotification, Future[State]] = cursor.documentSource()
+    src
   }
 
   override def fetchDistinctNotificationCSIDsWhichAreNotLocked(): Future[Set[ClientSubscriptionId]] = {

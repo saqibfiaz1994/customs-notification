@@ -162,6 +162,20 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
 
       await(dataflow.run)
     }
+
+    "streaming fetch by clientSubscriptionId should return a two records" in {
+      implicit val system = ActorSystem()
+      implicit val mater = ActorMaterializer()
+      await(repository.save(client1Notification1))
+      await(repository.save(client1Notification2))
+      await(repository.save(client2Notification1))
+
+      val src: Source[ClientNotification, Future[State]] = repository.fetch2(validClientSubscriptionId1)
+      val sink: Sink[ClientNotification, Future[Done]] = Sink.foreach[ClientNotification](n => println(s"XXXXXXXXXXXXXXXXX: $n"))
+      val dataflow: RunnableGraph[Future[Done]] = src.toMat(sink)(Keep.right)
+      //      val dataflow: RunnableGraph[Future[State]] = src.to(sink)
+      await(dataflow.run)
+    }
   }
 
   "repository" should {
