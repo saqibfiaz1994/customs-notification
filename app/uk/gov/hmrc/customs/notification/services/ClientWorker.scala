@@ -72,8 +72,8 @@ class ClientWorkerImpl @Inject()(
 
   // TODO: read this value from HTTP VERBS config and add 10%
   private val awaitApiCallDuration = 25 second
-
-  protected val loopIncrementToLog = 10
+  private val awaitMongoCallDuration = 25 second
+  protected val loopIncrementToLog = 1
 
   override def processNotificationsFor(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId, lockDuration: org.joda.time.Duration): Future[Unit] = {
     //implicit HeaderCarrier required for ApiSubscriptionFieldsConnector
@@ -125,12 +125,16 @@ class ClientWorkerImpl @Inject()(
         val msg = s"[clientSubscriptionId=$csid][lockOwnerId=${lockOwnerId.id}] error releasing lock"
         logger.error(msg) //TODO: extend logging API so that we can log an error on a throwable
     }
-    Await.result(f, awaitApiCallDuration)
+    scala.concurrent.blocking {
+      Await.result(f, awaitMongoCallDuration)
+    }
   }
 
   private def blockingFetch(csid: ClientSubscriptionId)(implicit hc: HeaderCarrier): Seq[ClientNotification] = {
     try {
-      Await.result(repo.fetch(csid), awaitApiCallDuration)
+      scala.concurrent.blocking {
+        Await.result(repo.fetch(csid), awaitMongoCallDuration)
+      }
     }
     catch {
       case NonFatal(e) =>
@@ -141,10 +145,8 @@ class ClientWorkerImpl @Inject()(
 
   protected def process(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId)(implicit hc: HeaderCarrier, refreshLockFailed: AtomicBoolean): Future[Unit] = {
     Future{
-      scala.concurrent.blocking {
-        blockingOuterProcessLoop(csid, lockOwnerId)
-        blockingReleaseLock(csid, lockOwnerId)
-      }
+      blockingOuterProcessLoop(csid, lockOwnerId)
+      blockingReleaseLock(csid, lockOwnerId)
     }
   }
 
@@ -152,47 +154,47 @@ class ClientWorkerImpl @Inject()(
 
     logger.info(s"[clientSubscriptionId=$csid] About to push notifications")
 
-      var continue = true
-      var counter = 0
-      var maybeCurrentRecord: Option[ClientNotification] = None
-      var maybePreviousRecord: Option[ClientNotification] = None
-      try {
-        while (continue) {
-          try {
+    var continue = true
+    var counter = 0
+    var maybeCurrentRecord: Option[ClientNotification] = None
+    var maybePreviousRecord: Option[ClientNotification] = None
+    try {
+      while (continue) {
+        try {
+          val seq = blockingFetch(csid)
+          maybePreviousRecord = maybeCurrentRecord
+          maybeCurrentRecord = seq.headOption
+          // the only way to exit loop is:
+          // 1. if blockingFetch returns empty list or there is a FATAL exception
+          // 2. maybeCurrentRecord == maybePreviousRecord (implies we are not making progress) so end this loop/worker. After the polling interval we will try again. Polling interval will hopefully allow us to reclaim resources via Garbage Collection
+          // 3. there is a FATAL exception
+          if (seq.isEmpty) {
+            logger.info(s"[clientSubscriptionId=$csid] fetch returned zero records so exiting")
+            continue = false
+          } else if (maybeCurrentRecord == maybePreviousRecord) {
+            logger.info(s"[clientSubscriptionId=$csid] not making progress processing records so exiting")
+            continue = false
+          }
+          else {
             counter += 1
-            if (counter % loopIncrementToLog == 0) {
+            if (loopIncrementToLog == 1 || counter % loopIncrementToLog == 0) {
               val msg = s"[clientSubscriptionId=$csid] processing notification record number $counter, logging every $loopIncrementToLog records"
               logger.info(msg)
             }
-            val seq = blockingFetch(csid)
-            maybePreviousRecord = maybeCurrentRecord
-            maybeCurrentRecord = seq.headOption
-            // the only way to exit loop is:
-            // 1. if blockingFetch returns empty list or there is a FATAL exception
-            // 2. maybeCurrentRecord == maybePreviousRecord (implies we are not making progress) so end this loop/worker. After the polling interval we will try again. Polling interval will hopefully allow us to reclaim resources via Garbage Collection
-            // 3. there is a FATAL exception
-            if (seq.isEmpty) {
-              logger.info(s"[clientSubscriptionId=$csid] fetch returned zero records so exiting")
-              continue = false
-            } else if (maybeCurrentRecord == maybePreviousRecord) {
-              logger.info(s"[clientSubscriptionId=$csid] not making progress processing records so exiting")
-              continue = false
-            }
-            else {
-              blockingInnerPushLoop(seq)
-              logger.info(s"[clientSubscriptionId=$csid] Push successful")
-            }
-          } catch {
-            case PushProcessingException(_) =>
-              blockingEnqueueNotificationsOnPullQueue(csid, lockOwnerId)
-            case NonFatal(e) =>
-              logger.error(s"[clientSubscriptionId=$csid] error processing notifications: ${e.getMessage}")
+            blockingInnerPushLoop(seq)
+            logger.info(s"[clientSubscriptionId=$csid] Push successful")
           }
+        } catch {
+          case PushProcessingException(_) =>
+            blockingEnqueueNotificationsOnPullQueue(csid, lockOwnerId)
+          case NonFatal(e) =>
+            logger.error(s"[clientSubscriptionId=$csid] error processing notifications: ${e.getMessage}")
         }
-      } catch {
-        case ExitOuterLoopException(msg) =>
-          logger.error(s"Fatal error - exiting processing: $msg")
       }
+    } catch {
+      case ExitOuterLoopException(msg) =>
+        logger.error(s"Fatal error - exiting processing: $msg")
+    }
 
   }
 
@@ -220,7 +222,9 @@ class ClientWorkerImpl @Inject()(
 
   private def blockingMaybeDeclarantDetails(cn: ClientNotification)(implicit hc: HeaderCarrier) = {
     try {
-      Await.result(callbackDetailsConnector.getClientData(cn.csid.id.toString), awaitApiCallDuration)
+      scala.concurrent.blocking {
+        Await.result(callbackDetailsConnector.getClientData(cn.csid.id.toString), awaitApiCallDuration)
+      }
     } catch {
       case NonFatal(e) =>
         throw ExitOuterLoopException(s"Error getting declarant details: ${e.getMessage}")
@@ -228,13 +232,15 @@ class ClientWorkerImpl @Inject()(
   }
 
   private def blockingDeleteNotification(cn: ClientNotification)(implicit hc: HeaderCarrier): Unit = {
-    Await.result(
-      repo.delete(cn).recover{
-        case NonFatal(e) =>
-          // we can't do anything other than log delete error
-          logger.error(s"${logMsgPrefix(cn)} error deleting notification")
-      },
-      awaitApiCallDuration)
+    scala.concurrent.blocking {
+      Await.result(
+        repo.delete(cn).recover {
+          case NonFatal(e) =>
+            // we can't do anything other than log delete error
+            logger.error(s"${logMsgPrefix(cn)} error deleting notification")
+        },
+        awaitMongoCallDuration)
+    }
   }
 
 
