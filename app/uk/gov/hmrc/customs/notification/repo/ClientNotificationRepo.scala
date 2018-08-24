@@ -107,13 +107,12 @@ class ClientNotificationMongoRepo @Inject()(configService: CustomsNotificationCo
     collection.find(selector).sort(sortOrder).cursor().collect[List](maxDocs = configService.pushNotificationConfig.maxRecordsToFetch, Cursor.FailOnError[List[ClientNotification]]())
   }
 
-  // client can limit max records to process by keeping a count and terminating on max
   def fetch2(csid: ClientSubscriptionId): (Source[ClientNotification, Future[State]]) = {
     notificationLogger.debug(s"fetching clientNotification(s) with csid: ${csid.id.toString}")
     val selector = Json.obj("csid" -> csid.id)
     val sortOrder = Json.obj("timeReceived" -> 1)
     val cursor: AkkaStreamCursor[ClientNotification] = collection.find(selector).sort(sortOrder).cursor[ClientNotification]()
-    val src: Source[ClientNotification, Future[State]] = cursor.documentSource()
+    val src: Source[ClientNotification, Future[State]] = cursor.documentSource(maxDocs = configService.pushNotificationConfig.maxRecordsToFetch)
     src
   }
 
