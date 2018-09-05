@@ -19,9 +19,9 @@ package integration
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, ClosedShape}
 import akka.{Done, NotUsed}
-import akka.stream.scaladsl.{Keep, RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{Flow, GraphDSL, Keep, RunnableGraph, Sink, Source}
 import org.joda.time.{DateTime, DateTimeZone, Seconds}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
@@ -109,6 +109,7 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
 
   private def configWithMaxRecords(maxRecords: Int = five): CustomsNotificationConfig = {
     val config = new CustomsNotificationConfig{
+      override def pullExcludeConfig: PullExcludeConfig = ???
       override def maybeBasicAuthToken: Option[String] = None
       override def notificationQueueConfig: NotificationQueueConfig = mock[NotificationQueueConfig]
       override def googleAnalyticsSenderConfig: GoogleAnalyticsSenderConfig = mock[GoogleAnalyticsSenderConfig]
@@ -176,118 +177,63 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
       //      val dataflow: RunnableGraph[Future[State]] = src.to(sink)
       await(dataflow.run)
     }
-  }
 
-  "repository" should {
-    "successfully save a single notification" in {
-      when(mockErrorHandler.handleSaveError(any(), any(), any())).thenReturn(true)
-      val saveResult = await(repository.save(client1Notification1))
-      saveResult shouldBe true
-      collectionSize shouldBe 1
+    /*
+    TODO:
+    - multiple sinks in a RunnableGraph
+    - getting a future result of materialized sink(s)
+    - timers
+    */
 
-      val findResult = await(repository.collection.find(selector(validClientSubscriptionId1)).one[ClientNotification]).get
-      findResult.id should not be None
-      findResult.timeReceived should not be None
-      Seconds.secondsBetween(DateTime.now(DateTimeZone.UTC), findResult.timeReceived.get).getSeconds should be < 3
-      findResult.notification shouldBe client1Notification1.notification
-      findResult.csid shouldBe client1Notification1.csid
-    }
+    "Complex linear async graph flow" in {
+      implicit val system = ActorSystem()
+      implicit val mater = ActorMaterializer()
 
-    "successfully save when called multiple times" in {
-      await(repository.save(client1Notification1))
-      await(repository.save(client1Notification2))
-      await(repository.save(client2Notification1))
+      case class Notification(i: Int)
+      case class Declarant(i: Int)
+      case class Holder(n: Notification, isPush: Boolean = true, d: Option[Declarant] = None, error: Option[String] = None)
 
-      collectionSize shouldBe 3
-      val clientNotifications = await(repository.collection.find(selector(validClientSubscriptionId1)).cursor[ClientNotification]().collect[List](Int.MaxValue, Cursor.FailOnError[List[ClientNotification]]()))
-      clientNotifications.size shouldBe 2
-      clientNotifications.head.id should not be None
-    }
+      def asyncFlow(isPush: Boolean)(block: Holder => Future[Holder]): Holder => Future[Holder] = h =>
+        if (h.isPush == isPush) {
+          block(h)
+        } else {
+          Future.successful(h)
+        }
 
-    "fetch by clientSubscriptionId should return a two records when not limited by max records to fetch" in {
-      await(repository.save(client1Notification1))
-      await(repository.save(client1Notification2))
-      await(repository.save(client2Notification1))
+      val g: RunnableGraph[NotUsed] = RunnableGraph.fromGraph(GraphDSL.create() {
+        implicit builder: GraphDSL.Builder[NotUsed] =>
 
-      val clientNotifications = await(repository.fetch(validClientSubscriptionId1))
+          import GraphDSL.Implicits._
+          val seq = scala.collection.immutable.Seq(1,2,3,4,5)
+          val in = Source(seq).map { i =>
+            //            println(s"i=$i")
+            Holder(Notification(i), i % 2 == 0)
+          }
+          val lookupDec = Flow[Holder].mapAsync(1)(asyncFlow(isPush = true){h =>
+            Future(h.copy(d = Some(Declarant(h.n.i))))
+          })
+          val sink = Sink.foreach[Holder](h => println(s"push $h "))
+          val push = Flow[Holder].mapAsync(1) {
+            asyncFlow(isPush = true) { h =>
+              println(s"doing push stuff for $h")
+              Future(h)
+            }
+          }
+          val pull = Flow[Holder].mapAsync(1) {
+            asyncFlow(isPush = false) { h =>
+              println(s"doing pull stuff for $h")
+              Future(h.copy(n = h.n.copy(i = h.n.i * 10), isPush = false))
+            }
+          }
 
-      clientNotifications.size shouldBe 2
-      clientNotifications.head.notification shouldBe client1Notification1.notification
-      clientNotifications(1).notification shouldBe client1Notification2.notification
+          in ~> lookupDec ~> push ~> pull ~> sink
 
-      logVerifier("debug", "fetching clientNotification(s) with csid: eaca01f9-ec3b-4ede-b263-61b626dde232 and with max records=5")
-    }
-
-    "fetch by clientSubscriptionId should return a one record when limited by one max record to fetch" in {
-      await(repository.save(client1Notification1))
-      await(repository.save(client1Notification2))
-      await(repository.save(client2Notification1))
-
-      val clientNotifications = await(repositoryWithOneMaxRecord.fetch(validClientSubscriptionId1))
-
-      clientNotifications.size shouldBe 1
-      clientNotifications.head.notification shouldBe client1Notification1.notification
-    }
-
-    "return empty List when not found" in {
-      await(repository.save(client1Notification1))
-      await(repository.save(client1Notification2))
-      val nonExistentClientNotification = client2Notification1
-
-      await(repository.fetch(nonExistentClientNotification.csid)) shouldBe Nil
-    }
-
-    "delete by ClientNotification should remove record" in {
-      await(repository.save(client1Notification1))
-      await(repository.save(client1Notification2))
-
-      collectionSize shouldBe 2
-      val clientNotifications = repository.fetch(client1Notification1.csid)
-
-      val clientNotificationToDelete = clientNotifications.head
-      await(repository.delete(clientNotificationToDelete))
-
-      collectionSize shouldBe 1
-      logVerifier("debug", s"[conversationId=638b405b-9f04-418a-b648-ce565b111b7b][clientSubscriptionId=eaca01f9-ec3b-4ede-b263-61b626dde232] deleting clientNotification with objectId: ${clientNotificationToDelete.id.stringify}")
-    }
-
-    "collection should be same size when deleting non-existent record" in {
-      await(repository.save(client1Notification1))
-      await(repository.save(client1Notification2))
-      collectionSize shouldBe 2
-
-      await(repository.delete(client1Notification1.copy(id = BSONObjectID.generate())))
-
-      collectionSize shouldBe 2
-    }
-
-    "notifications returned in insertion order" in {
-      await(repository.save(client1Notification1))
-      await(repository.save(client1Notification2))
-      await(repository.save(client2Notification1))
-      await(repository.save(client1Notification3))
-
-      collectionSize shouldBe 4
-      val clientNotifications = await(repository.fetch(validClientSubscriptionId1))
-      clientNotifications.size shouldBe 3
-      clientNotifications.head.notification.payload shouldBe payload1
-      clientNotifications(1).notification.payload shouldBe payload2
-      clientNotifications(2).notification.payload shouldBe payload3
-    }
-
-    "only notifications without locks should be returned" in {
-      await(repository.save(client1Notification1))
-      await(repository.save(client1Notification2))
-      await(repository.save(client2Notification1))
-      await(repository.save(client1Notification3))
-
-      await(lockRepo.tryToAcquireOrRenewLock(validClientSubscriptionId1, LockOwnerId(validClientSubscriptionId1.id.toString), duration))
-
-      val unlockedNotifications = await(repository.fetchDistinctNotificationCSIDsWhichAreNotLocked())
-
-      unlockedNotifications.size shouldBe 1
-      unlockedNotifications.head shouldBe validClientSubscriptionId2
+          ClosedShape
+      })
+      g.run
+      Thread.sleep(1000)
     }
 
   }
+
 }
