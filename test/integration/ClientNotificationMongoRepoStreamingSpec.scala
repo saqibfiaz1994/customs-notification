@@ -181,7 +181,7 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
     /*
     TODO:
     - multiple sinks in a RunnableGraph
-    - getting a future result of materialized sink(s)
+    - getting a future result of materialized sink(s) see https://stackoverflow.com/questions/42426741/akka-streams-how-do-i-get-materialized-sink-output-from-graphdsl-api
     - timers
     */
 
