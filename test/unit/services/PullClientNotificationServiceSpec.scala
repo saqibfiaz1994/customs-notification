@@ -29,9 +29,10 @@ import uk.gov.hmrc.customs.notification.domain.ClientNotification
 import uk.gov.hmrc.customs.notification.services.PullClientNotificationService
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.test.UnitSpec
+import util.MockitoPassByNameHelper.PassByNameVerifier
 import util.TestData._
 
-import scala.concurrent.Future;
+import scala.concurrent.Future
 
 class PullClientNotificationServiceSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
@@ -39,9 +40,9 @@ class PullClientNotificationServiceSpec extends UnitSpec with MockitoSugar with 
   private val mockLogger = mock[CdsLogger]
   private val mockGAConnector = mock[GoogleAnalyticsSenderConnector]
   private val service = new PullClientNotificationService(mockPullConnector, mockLogger, mockGAConnector)
-  private val mockNotification = mock[ClientNotification]
-  private implicit val hc = mock[HeaderCarrier]
+  private implicit val hc: HeaderCarrier = mock[HeaderCarrier]
   private val someNotification = clientNotification()
+  private val runtimeException = new RuntimeException("something went wrong")
 
   override protected def beforeEach(): Unit = {
     reset(mockPullConnector, mockLogger, mockGAConnector)
@@ -50,7 +51,6 @@ class PullClientNotificationServiceSpec extends UnitSpec with MockitoSugar with 
       .thenReturn(Future.successful(mock[HttpResponse]))
 
     when(mockGAConnector.send(any(), any())(meq(hc))).thenReturn(Future.successful(()))
-
   }
 
   "Pull service" should {
@@ -63,26 +63,34 @@ class PullClientNotificationServiceSpec extends UnitSpec with MockitoSugar with 
 
     "return sync False when the request to Pull Service is not successful" in {
       when(mockPullConnector.enqueue(any[ClientNotification]))
-        .thenReturn(Future.failed(new RuntimeException("something went wrong")))
+        .thenReturn(Future.failed(runtimeException))
 
       service.send(someNotification) should be(false)
 
       andGAEventHasBeenSentWith("notificationPullRequestFailed", s"[ConversationId=${someNotification.notification.conversationId}] A notification Pull request failed")
+      PassByNameVerifier(mockLogger, "error")
+        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde232][clientSubscriptionId=ffff01f9-ec3b-4ede-b263-61b626dde232]Failed to pass the notification to PULL service")
+        .withByNameParamMatcher(any[RuntimeException])
+        .verify()
     }
 
     "return async True when the request to Pull Service is successful" in {
-      await(service.sendAsync(someNotification)) should be(true)
+      service.send(someNotification) should be(true)
 
       andGAEventHasBeenSentWith("notificationLeftToBePulled", s"[ConversationId=${someNotification.notification.conversationId}] A notification has been left to be pulled")
     }
 
     "return async False when the request to Pull Service is not successful" in {
       when(mockPullConnector.enqueue(any[ClientNotification]))
-        .thenReturn(Future.failed(new RuntimeException("something went wrong")))
+        .thenReturn(Future.failed(runtimeException))
 
-      await(service.sendAsync(someNotification)) should be(false)
+      service.send(someNotification) should be(false)
 
       andGAEventHasBeenSentWith("notificationPullRequestFailed", s"[ConversationId=${someNotification.notification.conversationId}] A notification Pull request failed")
+      PassByNameVerifier(mockLogger, "error")
+        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde232][clientSubscriptionId=ffff01f9-ec3b-4ede-b263-61b626dde232]Failed to pass the notification to PULL service")
+        .withByNameParamMatcher(any[RuntimeException])
+        .verify()
     }
 
   }
@@ -93,7 +101,6 @@ class PullClientNotificationServiceSpec extends UnitSpec with MockitoSugar with 
 
     verify(mockGAConnector, times(1)).send(eventNameCaptor.capture(), msgCaptor.capture())(any())
 
-    val capturedEventNames = eventNameCaptor.getAllValues
     eventNameCaptor.getValue should be(expectedEventName)
     msgCaptor.getValue should be(expectedMessage)
   }

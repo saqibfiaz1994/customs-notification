@@ -17,12 +17,14 @@
 package uk.gov.hmrc.customs.notification.controllers
 
 import java.util.UUID
-
 import javax.inject.{Inject, Singleton}
+
 import play.api.mvc._
 import uk.gov.hmrc.customs.api.common.controllers.ErrorResponse._
+import uk.gov.hmrc.customs.notification.connectors.ApiSubscriptionFieldsConnector
+import uk.gov.hmrc.customs.notification.controllers.CustomErrorResponses.ErrorCdsClientIdNotFound
 import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames._
-import uk.gov.hmrc.customs.notification.domain.{ClientSubscriptionId, ConversationId, CustomsNotificationConfig}
+import uk.gov.hmrc.customs.notification.domain.{ClientSubscriptionId, ConversationId, CustomsNotificationConfig, Header}
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.services.CustomsNotificationService
 import uk.gov.hmrc.http.HeaderCarrier
@@ -32,11 +34,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.xml.NodeSeq
 
-case class RequestMetaData(clientId: ClientSubscriptionId, conversationId: ConversationId, mayBeBadgeId: Option[String])
+case class RequestMetaData(clientId: ClientSubscriptionId, conversationId: ConversationId, mayBeBadgeId: Option[Header], mayBeEoriNumber: Option[Header])
 
 @Singleton
 class CustomsNotificationController @Inject()(logger: NotificationLogger,
                                               customsNotificationService: CustomsNotificationService,
+                                              callbackDetailsConnector: ApiSubscriptionFieldsConnector,
                                               configService: CustomsNotificationConfig)
   extends BaseController with HeaderValidator {
 
@@ -56,29 +59,41 @@ class CustomsNotificationController @Inject()(logger: NotificationLogger,
   }
 
   private def requestMetaData(headers: Headers): RequestMetaData = {
-    // headers have been validated so safe to do a naked get except badgeId which is optional
+    // headers have been validated so safe to do a naked get except badgeId & eori which are optional
     RequestMetaData(ClientSubscriptionId(UUID.fromString(headers.get(X_CDS_CLIENT_ID_HEADER_NAME).get)),
       ConversationId(UUID.fromString(headers.get(X_CONVERSATION_ID_HEADER_NAME).get)),
-      headers.get(X_BADGE_ID_HEADER_NAME))
+      findHeaderValue(X_BADGE_ID_HEADER_NAME, headers), findHeaderValue(X_EORI_ID_HEADER_NAME, headers))
   }
 
   private def process(xml: NodeSeq, md: RequestMetaData)(implicit hc: HeaderCarrier) = {
     logger.debug(s"Received notification with payload: $xml, metaData: $md")
 
-    customsNotificationService.handleNotification(xml, md)
-    .recover{
-      case e: Throwable =>
-        logger.error("error handling notification: " + e.getMessage)
-        ErrorInternalServerError.XmlResult
-    }.map {
-      case true =>
-        logger.info("Notification processed successfully")
-        Results.Accepted
-      case false =>
-        logger.error("error handling notification")
-        ErrorInternalServerError.XmlResult
-    }
+    callbackDetailsConnector.getClientData(md.clientId.toString()).flatMap {
 
+      case Some(_) =>
+        customsNotificationService.handleNotification(xml, md).recover{
+          case _: Throwable => ErrorInternalServerError.XmlResult
+        }.map {
+          case true =>
+            logger.info("Notification processed successfully")
+            Results.Accepted
+          case false => ErrorInternalServerError.XmlResult
+        }
+
+      case None =>
+        logger.error("Declarant data not found")
+        Future.successful(ErrorCdsClientIdNotFound.XmlResult)
+
+    }.recover {
+      case ex: Throwable =>
+        notificationLogger.error("Failed to fetch Declarant data " + ex.getMessage)
+        errorInternalServerError("Internal Server Error").XmlResult
+    }
   }
 
+  private def findHeaderValue(headerName: String, headers: Headers): Option[Header] = {
+    headers.headers.collectFirst {
+      case (`headerName`, headerValue) => Header(headerName, headerValue)
+    }
+  }
 }

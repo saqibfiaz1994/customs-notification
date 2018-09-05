@@ -47,18 +47,18 @@ class PullClientNotificationService @Inject() (notificationQueueConnector: Notif
     }
   }
 
-
-  def sendAsync(clientNotification: ClientNotification): Future[Boolean] = {
+  private def sendAsync(clientNotification: ClientNotification): Future[Boolean] = {
     notificationQueueConnector.enqueue(clientNotification).map { _ =>
       gaConnector.send("notificationLeftToBePulled", s"[ConversationId=${clientNotification.notification.conversationId}] A notification has been left to be pulled")
       logger.info(logMsgPrefix(clientNotification) + "Notification has been passed on to PULL service")
       true
     }
-      .recover {
-        case t: Throwable =>
-          gaConnector.send("notificationPullRequestFailed", s"[ConversationId=${clientNotification.notification.conversationId}] A notification Pull request failed")
-          logger.error(logMsgPrefix(clientNotification) + "Failed to pass the notification to PULL service", t)
-          false
-      }
+    .recover {
+      case t: Throwable =>
+        logger.error(logMsgPrefix(clientNotification) + "Failed to pass the notification to PULL service", t)
+        gaConnector.send("notificationPullRequestFailed", s"[ConversationId=${clientNotification.notification.conversationId}] A notification Pull request failed")
+        false
+    }
   }
+
 }
