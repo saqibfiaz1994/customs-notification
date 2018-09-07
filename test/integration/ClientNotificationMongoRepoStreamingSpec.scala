@@ -19,9 +19,9 @@ package integration
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, ClosedShape}
+import akka.stream.{ActorMaterializer, ClosedShape, Graph}
 import akka.{Done, NotUsed}
-import akka.stream.scaladsl.{Flow, GraphDSL, Keep, RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Keep, RunnableGraph, Sink, Source}
 import org.joda.time.{DateTime, DateTimeZone, Seconds}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
@@ -46,6 +46,7 @@ import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.play.test.UnitSpec
 import util.MockitoPassByNameHelper.PassByNameVerifier
 
+import scala.collection.immutable.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -180,10 +181,55 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
 
     /*
     TODO:
+    - timers
+    DONE
     - multiple sinks in a RunnableGraph
     - getting a future result of materialized sink(s) see https://stackoverflow.com/questions/42426741/akka-streams-how-do-i-get-materialized-sink-output-from-graphdsl-api
-    - timers
     */
+
+    // https://stackoverflow.com/questions/42426741/akka-streams-how-do-i-get-materialized-sink-output-from-graphdsl-api
+    "graph builder that materialises a sink" in {
+      implicit val system = ActorSystem()
+      implicit val mater = ActorMaterializer()
+
+      val source = Source(1 to 3)
+      val sink = Sink.foreach(println)
+      val flow = Flow[Int].map(i => i + 1)
+
+      val graphModel: Graph[ClosedShape, Future[Done]] = GraphDSL.create(sink) { implicit b => s =>
+        import GraphDSL.Implicits._
+
+        source ~> flow ~> s
+
+        // ClosedShape is just fine - it is always the shape of a RunnableGraph
+        ClosedShape
+      }
+      val g: RunnableGraph[Future[Done]] = RunnableGraph.fromGraph(graphModel)
+      println(await(g.run()))
+    }
+
+    "graph builder that broadcasts to 2 sinks, and materialises only one sink" in {
+      implicit val system = ActorSystem()
+      implicit val mater = ActorMaterializer()
+
+      val source = Source(1 to 3)
+      val sinkIgnore = Sink.ignore
+      val sinkHead: Sink[Int, Future[Option[Int]]] = Sink.headOption[Int]
+      val flow = Flow[Int].map(i => {println(s"i=$i"); i + 1})
+
+      val graphModel: Graph[ClosedShape.type, Future[Option[Int]]] = GraphDSL.create(sinkHead) { implicit b => s =>
+        import GraphDSL.Implicits._
+        val bcast = b.add(Broadcast[Int](2))
+
+        source ~> bcast ~> flow ~> sinkIgnore
+                  bcast ~> s
+        // ClosedShape is just fine - it is always the shape of a RunnableGraph
+        ClosedShape
+      }
+      val g: RunnableGraph[Future[Option[Int]]] = RunnableGraph.fromGraph(graphModel)
+      val maybeFirst: Option[Int] = await(g.run())
+      println("materialised = " + maybeFirst)
+    }
 
     "Complex linear async graph flow" in {
       implicit val system = ActorSystem()
