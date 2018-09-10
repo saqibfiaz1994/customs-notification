@@ -17,11 +17,13 @@
 package integration
 
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, ClosedShape, Graph}
 import akka.{Done, NotUsed}
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Keep, RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Keep, Merge, Partition, RestartFlow, RunnableGraph, Sink, Source}
+import com.fasterxml.jackson.databind.ser.std.StdJdkSerializers.AtomicBooleanSerializer
 import org.joda.time.{DateTime, DateTimeZone, Seconds}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
@@ -51,6 +53,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.control.NonFatal
 
 class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
   with BeforeAndAfterAll
@@ -148,10 +151,11 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
       .verify()
   }
 
+  implicit val system = ActorSystem()
+  implicit val mater = ActorMaterializer()
+
   "foo" should {
     "bar" in {
-      implicit val system = ActorSystem()
-      implicit val mater = ActorMaterializer()
       await(repository.save(client1Notification1))
       await(repository.save(client1Notification2))
       await(repository.save(client2Notification1))
@@ -166,8 +170,6 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
     }
 
     "streaming fetch by clientSubscriptionId should return a two records" in {
-      implicit val system = ActorSystem()
-      implicit val mater = ActorMaterializer()
       await(repository.save(client1Notification1))
       await(repository.save(client1Notification2))
       await(repository.save(client2Notification1))
@@ -177,6 +179,50 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
       val dataflow: RunnableGraph[Future[Done]] = src.toMat(sink)(Keep.right)
       //      val dataflow: RunnableGraph[Future[State]] = src.to(sink)
       await(dataflow.run)
+    }
+
+    "restartable flow - a flow stage with N retries after a backoff" in {
+      val source:Source[Int, NotUsed] = Source(1 to 5)
+      @volatile var counter = 0
+      val flow = Flow[Int].map{i =>
+        counter += 1
+        println(s"XXXXXX in flow i=$i counter=$counter")
+        if (i == 2 && counter < 3) {
+          throw new RuntimeException("BOOM!")
+        }
+        i
+      }.log("flow boom")
+      val restartFlow = RestartFlow.onFailuresWithBackoff(
+        minBackoff = 1.second,
+        maxBackoff =  20.second,
+        randomFactor =  0.2,
+        maxRestarts =  6)(() => flow)
+      val sink2:Sink[Int, Future[Int]] = Sink.fold(0)(_+_)
+      val fut2 = source.via(restartFlow).toMat(sink2)(Keep.right).run
+      fut2.onComplete(println)(system.dispatcher)
+      await(fut2)
+    }
+
+    "restartable flow that untimatly fails after restarts - a flow stage with N retries after a backoff" in {
+      val source:Source[Int, NotUsed] = Source(1 to 5)
+      @volatile var counter = 0
+      val flow = Flow[Int].map{i =>
+        counter += 1
+        println(s"XXXXXX in flow i=$i counter=$counter")
+        if (i == 3) {
+          throw new RuntimeException("BOOM!")
+        }
+        i
+      }.log("flow boom")
+      val restartFlow = RestartFlow.onFailuresWithBackoff(
+        minBackoff = 1.second,
+        maxBackoff =  20.second,
+        randomFactor =  0.2,
+        maxRestarts =  3)(() => flow)
+      val sink2: Sink[Int, Future[Done]] = Sink.foreach[Int](i => println(s"XXXXXX SINK i=$i"))
+      val fut2 = source.via(restartFlow).toMat(sink2)(Keep.right).run
+      fut2.onComplete(println)(system.dispatcher)
+      await(fut2)
     }
 
     /*
@@ -189,14 +235,14 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
 
     // https://stackoverflow.com/questions/42426741/akka-streams-how-do-i-get-materialized-sink-output-from-graphdsl-api
     "graph builder that materialises a sink" in {
-      implicit val system = ActorSystem()
-      implicit val mater = ActorMaterializer()
-
       val source = Source(1 to 3)
-      val sink = Sink.foreach(println)
+      case class Report(list: Seq[Int] = Seq.empty)
+      val sink = Sink.fold[Report, Int](Report()){
+        case (Report(list), i) => Report(list :+ i)
+      }
       val flow = Flow[Int].map(i => i + 1)
 
-      val graphModel: Graph[ClosedShape, Future[Done]] = GraphDSL.create(sink) { implicit b => s =>
+      val graphModel: Graph[ClosedShape.type, Future[Report]] = GraphDSL.create(sink) { implicit b =>s =>
         import GraphDSL.Implicits._
 
         source ~> flow ~> s
@@ -204,14 +250,11 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
         // ClosedShape is just fine - it is always the shape of a RunnableGraph
         ClosedShape
       }
-      val g: RunnableGraph[Future[Done]] = RunnableGraph.fromGraph(graphModel)
+      val g: RunnableGraph[Future[Report]] = RunnableGraph.fromGraph(graphModel)
       println(await(g.run()))
     }
 
     "graph builder that broadcasts to 2 sinks, and materialises only one sink" in {
-      implicit val system = ActorSystem()
-      implicit val mater = ActorMaterializer()
-
       val source = Source(1 to 3)
       val sinkIgnore = Sink.ignore
       val sinkHead: Sink[Int, Future[Option[Int]]] = Sink.headOption[Int]
@@ -232,9 +275,6 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
     }
 
     "Complex linear async graph flow" in {
-      implicit val system = ActorSystem()
-      implicit val mater = ActorMaterializer()
-
       case class Notification(i: Int)
       case class Declarant(i: Int)
       case class Holder(n: Notification, isPush: Boolean = true, d: Option[Declarant] = None, error: Option[String] = None)
@@ -280,6 +320,219 @@ class ClientNotificationMongoRepoStreamingSpec extends UnitSpec
       Thread.sleep(1000)
     }
 
+    "XOR graph flow" in {
+      case class Notification(i: Int, isPush: Boolean = true)
+      case class Declarant(i: Int)
+      case class PushNotification(n: Notification, d: Option[Declarant])
+      def portMapper(value: Notification): Int = value match {
+        case Notification(i, _) if i % 2 == 0 => 0
+        case _ => 1
+      }
+
+      val g = RunnableGraph.fromGraph(GraphDSL.create() {
+        implicit builder: GraphDSL.Builder[NotUsed] =>
+
+          import GraphDSL.Implicits._
+          val seq = scala.collection.immutable.Seq(1,2,3,4,5)
+          val in = Source(seq).map(i => Notification(i))
+          val lookupDec = Flow[Notification].map(n => PushNotification(Notification(n.i), Some(Declarant(n.i))))
+          val push = Sink.foreach[PushNotification](n => println(s"push $n "))
+          val pull = Sink.foreach[Notification](n => println(s"pull $n "))
+          val f1 = Flow[Notification].map(n =>Notification(n.i + 1))
+
+          val router = builder.add(Partition[Notification](2, portMapper))
+
+          in ~> f1 ~> router ~> lookupDec ~> push
+          router ~> pull
+          ClosedShape
+      })
+      g.run
+    }
+
+    "Complex linear async graph flow 2" in {
+      val routeAllToPull = new AtomicBoolean(false)
+
+      case class Notification(i: Int)
+      case class Declarant(i: Int)
+      case class Holder(n: Notification, isPush: Boolean = true, d: Option[Declarant] = None, error: Option[String] = None) {
+        def toPull = this.copy(isPush = false, d = None)
+        def toPush = this.copy(isPush = true, d = None)
+        def toPush(dec: Declarant) = this.copy(isPush = true, d = Some(dec))
+      }
+
+      val sleepMillis = 100
+      class Connector() {
+        def clientDetails(i: Int, fail: Boolean = false): Future[Option[Declarant]] = {
+          scala.concurrent.blocking(Thread.sleep(sleepMillis))
+          if (fail) {
+            println(s"clientDetails BOOM! i = $i")
+            throw new RuntimeException("DECLARANT LOOKUP FAILED")
+          }
+          Future( if (i == -1) None else Some(Declarant(i)))
+        }
+        def push(n: Notification, d: Declarant, fail: Boolean = false): Future[Unit] = {
+          scala.concurrent.blocking(Thread.sleep(sleepMillis))
+          if (fail) throw new RuntimeException("PUSH FAILED") else Future.successful(())
+        }
+        def pull(n: Notification, fail: Boolean = false): Future[Unit] = {
+          scala.concurrent.blocking(Thread.sleep(sleepMillis))
+          if (fail) throw new RuntimeException("PULL FAILED") else Future.successful(())
+        }
+      }
+      val connector = new Connector
+
+      def asyncFlow(isPush: Boolean)(block: Holder => Future[Holder]): Holder => Future[Holder] = h =>
+        if (h.isPush == isPush) {
+          block(h)
+        } else {
+          Future.successful(h)
+        }
+
+      val g = RunnableGraph.fromGraph(GraphDSL.create() {
+        implicit builder: GraphDSL.Builder[NotUsed] =>
+
+          import GraphDSL.Implicits._
+          val seq = scala.collection.immutable.Seq(1,2,3,4,5,6,7,8)
+          val in = Source(seq).map { i =>
+            Holder(Notification(i), true)
+          }
+          val pushOrPullRouter = Flow[Holder].map{h =>
+            println(s"pushOrPullRouter h=$h")
+            if (routeAllToPull.get) h.toPull else h.toPush
+          }
+          val lookupDec = Flow[Holder].mapAsync(1)(asyncFlow(isPush = true){ h =>
+            connector.clientDetails(h.n.i).map{
+              case None =>
+                routeAllToPull.set(true)
+                h.toPull
+              case Some(d) =>
+                h.toPush(d)
+            }
+          })
+          val push = Flow[Holder].mapAsync(1) {
+            println(s"PUSH in push")
+            asyncFlow(isPush = true) { h =>
+              println(s"doing push stuff for $h")
+              val f = connector.push(h.n, h.d.get).map(_ => {
+                println(s"PUSH OK")
+                h
+              })
+              f.onFailure{
+                case NonFatal(e) => {
+                  println(s"PUSH FAILED")
+                  routeAllToPull.set(true)
+                  h.toPull
+                }
+              }
+              f
+            }
+          }
+          val pull = Flow[Holder].mapAsync(1) {
+            asyncFlow(isPush = false) { h =>
+              println(s"doing pull stuff for $h")
+              Future(h.copy(n = h.n.copy(i = h.n.i * 10), isPush = false))
+            }
+          }
+          val sink = Sink.foreach[Holder](h => println(s"XXXXX HOLDER = $h "))
+
+          in ~> pushOrPullRouter ~> lookupDec ~> push ~> pull ~> sink
+
+          ClosedShape
+      })
+      g.run
+      Thread.sleep(3000)
+    }
+
+//    "Complex linear async graph flow 2" in {
+//      implicit val system = ActorSystem()
+//      implicit val mater = ActorMaterializer()
+//      val sleepMillis = 100
+//      val routeAllToPull = new AtomicBoolean(false)
+//
+//      class Connector() {
+//        def clientDetails(i: Int, fail: Boolean = false): Future[Option[Declarant]] = {
+//          scala.concurrent.blocking(Thread.sleep(sleepMillis))
+//          if (fail) throw new RuntimeException("DECLARANT LOOKUP FAILED")
+//          Future( if (i % 2 == 0) Some(Declarant(i)) else None)
+//        }
+//        def push(n: PushNotification, d: Declarant, fail: Boolean = false): Future[Unit] = {
+//          scala.concurrent.blocking(Thread.sleep(sleepMillis))
+//          if (fail) throw new RuntimeException("PUSH FAILED") else Future.successful(())
+//        }
+//        def pull(n: Notification, fail: Boolean = false): Future[Unit] = {
+//          scala.concurrent.blocking(Thread.sleep(sleepMillis))
+//          if (fail) throw new RuntimeException("PULL FAILED") else Future.successful(())
+//        }
+//      }
+//
+//
+//      trait Notification{
+//        val i: Int
+//      }
+//      case class PushNotification(i: Int, d: Option[Declarant] = None) extends Notification
+//      case class PullNotification(i: Int) extends Notification
+//      case class Declarant(i: Int)
+//      case class Holder(n: PushNotification, isPush: Boolean = true, d: Option[Declarant] = None, error: Option[String] = None)
+//
+//      def asyncFlow(isPush: Boolean)(block: Holder => Future[Holder]): Holder => Future[Holder] = h =>
+//        if (h.isPush == isPush) {
+//          block(h)
+//        } else {
+//          Future.successful(h)
+//        }
+//
+//      val g: RunnableGraph[NotUsed] = RunnableGraph.fromGraph(GraphDSL.create() {
+//        implicit builder: GraphDSL.Builder[NotUsed] =>
+//
+//          import GraphDSL.Implicits._
+//          val seq = scala.collection.immutable.Seq(1,2,3,4,5)
+//          val in = Source(seq).map { i =>
+//            //            println(s"i=$i")
+//            PushNotification(i)
+//          }
+//          val routeAllToPull = new AtomicBoolean(false)
+////          val router = Flow[Notification].map{n =>
+////            if (routeAllToPull.get || n.i % 2 != 0) PushNotification(n.i) else PullNotification(n.i)
+////          }
+//          val lookupDecIfPush = Flow[Notification].mapAsync(1){
+//            case pull: PullNotification => Future(pull)
+//            case push: PushNotification =>
+//              Future {
+//                if (push.i % 2 != 2) push.copy(d = Some(Declarant(push.i))) else PullNotification(push.i)
+//              }
+//          }
+//          val sink = Sink.foreach[Notification](h => println(s"notification=$h"))
+//          val pushIfpush = Flow[Notification].mapAsync(1) {
+//            case pull: PullNotification => Future( pull )
+//            case push: PushNotification =>
+//              Future {
+//                if (push.i == 8) {
+//                  routeAllToPull.set(true)
+//                  PullNotification(push.i)
+//                } else {
+//                  push
+//                }
+//              }
+//          }
+//          val pullIfpull = Flow[Notification].mapAsync(1) {
+//            case pull: PullNotification => Future( pull )
+//            case push: PushNotification => Future( push )
+//          }
+//          val router = builder.add(Partition[Notification](2, _ => if (routeAllToPull.get) 1 else 0))
+//          val merge = builder.add(Merge[Notification](2))
+//          //TODO: think about exceptions
+//
+//          in ~> pushOrPullRouter ~> lookupDecIfPush ~> pushIfPush ~> pullIfPull ~> sink
+//
+////          source ~> router ~> lookupDec ~> push ~> merge ~> sink
+////                    router ~> pull ~> merge
+//
+//          ClosedShape
+//      })
+//      g.run
+//      Thread.sleep(1000)
+//    }
+//
   }
 
 }

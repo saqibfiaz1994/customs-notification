@@ -13,6 +13,7 @@ object AppDependencies {
   private val mongoLockVersion = "5.1.0"
   private val testScope = "test,it"
   private val reactiveMongoStreamingVersion = "0.16.0"
+  private val akkaVersion = "2.5.16"
 
   val xmlResolver = "xml-resolver" % "xml-resolver" % "1.2"
 
@@ -40,4 +41,5 @@ object AppDependencies {
 
   val reactiveMongoStreaming = "org.reactivemongo" %% "reactivemongo-akkastream" % reactiveMongoStreamingVersion
 
+  val akkaStreams = "com.typesafe.akka" %% "akka-stream" % akkaVersion
 }
