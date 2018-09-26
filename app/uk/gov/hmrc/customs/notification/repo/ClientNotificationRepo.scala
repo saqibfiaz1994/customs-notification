@@ -110,7 +110,7 @@ class ClientNotificationMongoRepo @Inject()(configService: CustomsNotificationCo
     collection.find(selector).sort(sortOrder).cursor().collect[List](maxDocs = configService.pushNotificationConfig.maxRecordsToFetch, Cursor.FailOnError[List[ClientNotification]]())
   }
 
-  def fetch2(csid: ClientSubscriptionId): (Source[ClientNotification, Future[State]]) = {
+  def streamingFetch(csid: ClientSubscriptionId): (Source[ClientNotification, Future[State]]) = {
     notificationLogger.debug(s"fetching clientNotification(s) with csid: ${csid.id.toString}")
     val selector = Json.obj("csid" -> csid.id)
     val sortOrder = Json.obj("timeReceived" -> 1)
