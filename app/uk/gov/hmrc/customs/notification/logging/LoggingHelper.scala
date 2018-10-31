@@ -48,7 +48,7 @@ object LoggingHelper {
   }
 
   def formatInfo(msg: String, headers: SeqOfHeader): String = {
-    s"${formatLogPrefix(headers)} $msg"
+    s"${formatLogPrefix(headers)} $msg".trim
   }
 
   def formatDebug(msg: String, headers: SeqOfHeader): String = {

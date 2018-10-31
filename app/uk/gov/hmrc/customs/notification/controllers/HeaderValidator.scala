@@ -99,6 +99,7 @@ trait HeaderValidator {
   private def hasValidConversationId(implicit h: Headers) = {
     val result = h.get(X_CONVERSATION_ID_HEADER_NAME).exists(_.matches(uuidRegex))
     logValidationResult(X_CONVERSATION_ID_HEADER_NAME, result)
+    notificationLogger.infoMonitorEvent(h.headers)
     result
   }
 
