@@ -16,27 +16,21 @@
 
 package uk.gov.hmrc.customs.notification.repo
 
-import javax.inject.{Inject, Singleton}
-
 import akka.stream.scaladsl.Source
 import com.google.inject.ImplementedBy
+import javax.inject.Inject
 import org.joda.time.{DateTime, DateTimeZone}
+import org.reactivestreams.Publisher
 import play.api.libs.json.{JsNumber, Json}
 import reactivemongo.api.Cursor
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.JsObjectDocumentWriter
-import uk.gov.hmrc.customs.notification.domain.{ClientNotification, ClientSubscriptionId, CustomsNotificationConfig}
+import uk.gov.hmrc.customs.notification.domain.{ClientSubscriptionId, CustomsNotificationConfig}
 import uk.gov.hmrc.customs.notification.logging.LoggingHelper.logMsgPrefix
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.ReactiveRepository
-
-import akka.stream.scaladsl.Source
-import com.google.inject.Singleton
-import play.api.libs.json.{JsObject, JsValue, Json}
-import reactivemongo.play.json.JsObjectDocumentWriter
-import reactivemongo.play.json.collection.JSONCollection
 // ReactiveMongo extensions
 import reactivemongo.akkastream.{AkkaStreamCursor, State, cursorProducer}
 import uk.gov.hmrc.customs.notification.domain.ClientNotification
@@ -117,6 +111,15 @@ class ClientNotificationMongoRepo @Inject()(configService: CustomsNotificationCo
     val cursor: AkkaStreamCursor[ClientNotification] = collection.find(selector).sort(sortOrder).cursor[ClientNotification]()
     val src: Source[ClientNotification, Future[State]] = cursor.documentSource(maxDocs = configService.pushNotificationConfig.maxRecordsToFetch)
     src
+  }
+
+  def streamingPublisherFetch(csid: ClientSubscriptionId): Publisher[ClientNotification] = {
+    notificationLogger.debug(s"fetching clientNotification(s) with csid: ${csid.id.toString}")
+    val selector = Json.obj("csid" -> csid.id)
+    val sortOrder = Json.obj("timeReceived" -> 1)
+    val cursor: AkkaStreamCursor[ClientNotification] = collection.find(selector).sort(sortOrder).cursor[ClientNotification]()
+    val documentPublisher = cursor.documentPublisher()
+    documentPublisher
   }
 
   override def fetchDistinctNotificationCSIDsWhichAreNotLocked(): Future[Set[ClientSubscriptionId]] = {

@@ -42,4 +42,7 @@ object AppDependencies {
   val reactiveMongoStreaming = "org.reactivemongo" %% "reactivemongo-akkastream" % reactiveMongoStreamingVersion
 
   val akkaStreams = "com.typesafe.akka" %% "akka-stream" % akkaVersion
+
+  val fs2Core = "co.fs2" %% "fs2-core" % "1.0.0" // For cats 1.4.0 and cats-effect 1.0
+  val fs2ReactiveStreams = "co.fs2" %% "fs2-reactive-streams" % "1.0.0"
 }
