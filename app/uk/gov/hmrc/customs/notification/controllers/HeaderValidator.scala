@@ -16,13 +16,18 @@
 
 package uk.gov.hmrc.customs.notification.controllers
 
+import java.time.ZonedDateTime
+
+import javax.inject.{Inject, Singleton}
 import play.api.http.HeaderNames._
-import play.api.mvc.{ActionBuilder, Headers, Request, Result}
+import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.customs.api.common.controllers.ErrorResponse.{ErrorAcceptHeaderInvalid, ErrorContentTypeHeaderInvalid, ErrorGenericBadRequest}
 import uk.gov.hmrc.customs.notification.controllers.CustomErrorResponses._
 import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames.{X_CDS_CLIENT_ID_HEADER_NAME, X_CONVERSATION_ID_HEADER_NAME, X_CORRELATION_ID_HEADER_NAME}
+import uk.gov.hmrc.customs.notification.domain.CustomsNotificationConfig
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger
+import uk.gov.hmrc.customs.notification.services.DateTimeService
 
 import scala.concurrent.Future
 
@@ -36,35 +41,34 @@ trait HeaderValidator {
 
   private val basicAuthTokenScheme = "Basic "
 
-  def validateHeaders(maybeBasicAuthToken: Option[String]): ActionBuilder[Request] = new ActionBuilder[Request] {
-
-    def invokeBlock[A](request: Request[A], block: Request[A] => Future[Result]): Future[Result] = {
+  def validateHeaders[A](maybeBasicAuthToken: Option[String], request: Request[A], timeService: DateTimeService): Either[Result, ValidatedHeadersRequest[A]] = {
+      val timeUtc = timeService.zonedDateTimeUtc
       implicit val headers: Headers = request.headers
       val logMessage = "Received notification"
       notificationLogger.debug(logMessage, headers.headers)
 
       if (!hasAccept) {
-        Future.successful(ErrorAcceptHeaderInvalid.XmlResult)
+        Left(ErrorAcceptHeaderInvalid.XmlResult)
       } else if (!hasContentType) {
-        Future.successful(ErrorContentTypeHeaderInvalid.XmlResult)
+        Left(ErrorContentTypeHeaderInvalid.XmlResult)
       } else if (missingClientId) {
-        Future.successful(ErrorCdsClientIdMissing.XmlResult)
+        Left(ErrorCdsClientIdMissing.XmlResult)
       } else if (!hasValidClientId) {
-        Future.successful(ErrorCdsClientIdInvalid.XmlResult)
+        Left(ErrorCdsClientIdInvalid.XmlResult)
       } else if (missingConversationId) {
-        Future.successful(ErrorConversationIdMissing.XmlResult)
+        Left(ErrorConversationIdMissing.XmlResult)
       } else if (!hasValidConversationId) {
-        Future.successful(ErrorConversationIdInvalid.XmlResult)
+        Left(ErrorConversationIdInvalid.XmlResult)
       } else if (!hasAuth(maybeBasicAuthToken)) {
-        Future.successful(ErrorUnauthorized.XmlResult)
-      } else if(!correlationIdIsValidIfPresent) {
-        Future.successful(ErrorGenericBadRequest.XmlResult)
+        Left(ErrorUnauthorized.XmlResult)
+      } else if (!correlationIdIsValidIfPresent) {
+        Left(ErrorGenericBadRequest.XmlResult)
       }
       else {
-        block(request)
+        Right(ValidatedHeadersRequest(timeUtc, request))
       }
     }
-  }
+
 
   private def hasAccept(implicit h: Headers) = {
     val result = h.get(ACCEPT).fold(false)(_ == MimeTypes.XML)
@@ -129,3 +133,18 @@ trait HeaderValidator {
   }
 }
 
+case class ValidatedHeadersRequest[A](startTime: ZonedDateTime, request: Request[A]) extends WrappedRequest[A](request)
+
+@Singleton
+class HeaderValidatorAction @Inject() (logger: NotificationLogger, timeService: DateTimeService, configService: CustomsNotificationConfig) extends ActionRefiner[Request, ValidatedHeadersRequest] with HeaderValidator {
+
+  override def refine[A](request: Request[A]): Future[Either[Result, ValidatedHeadersRequest[A]]] = {
+
+    val r = validateHeaders(configService.maybeBasicAuthToken, request, timeService)
+    notificationLogger.debugWithoutRequestContext("In HeaderValidatorAction.")
+
+    Future.successful(r)
+  }
+
+  override val notificationLogger: NotificationLogger = logger
+}

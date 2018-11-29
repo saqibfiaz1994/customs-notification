@@ -40,20 +40,20 @@ case class RequestMetaData(clientId: ClientSubscriptionId, conversationId: Conve
 class CustomsNotificationController @Inject()(logger: NotificationLogger,
                                               customsNotificationService: CustomsNotificationService,
                                               callbackDetailsConnector: ApiSubscriptionFieldsConnector,
-                                              configService: CustomsNotificationConfig)
-  extends BaseController with HeaderValidator {
+                                              configService: CustomsNotificationConfig,
+                                              headerValidatorAction: HeaderValidatorAction)
+  extends BaseController {
 
-  override val notificationLogger: NotificationLogger = logger
   private lazy val maybeBasicAuthToken: Option[String] = configService.maybeBasicAuthToken
   private lazy val xmlValidationErrorMessage = "Request body does not contain well-formed XML."
 
-  def submit(): Action[AnyContent] = validateHeaders(maybeBasicAuthToken) async {
+  def submit(): Action[AnyContent] = (Action andThen headerValidatorAction).async {
     implicit request =>
       request.body.asXml match {
         case Some(xml) =>
           process(xml, requestMetaData(request.headers))
         case None =>
-          notificationLogger.error(xmlValidationErrorMessage)
+          logger.error(xmlValidationErrorMessage)
           Future.successful(errorBadRequest(xmlValidationErrorMessage).XmlResult)
       }
   }
@@ -87,7 +87,7 @@ class CustomsNotificationController @Inject()(logger: NotificationLogger,
 
     }.recover {
       case ex: Throwable =>
-        notificationLogger.error("Failed to fetch Declarant data " + ex.getMessage)
+        logger.error("Failed to fetch Declarant data " + ex.getMessage)
         errorInternalServerError("Internal Server Error").XmlResult
     }
   }
