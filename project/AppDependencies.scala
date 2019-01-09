@@ -9,6 +9,7 @@ object AppDependencies {
   private val pegdownVersion = "1.6.0"
   private val wireMockVersion = "2.20.0"
   private val customsApiCommonVersion = "1.36.0"
+  private val workItemRepoVersion = "5.2.0"
   private val playReactivemongoVersion = "6.2.0"
   private val mongoLockVersion = "5.1.0"
   private val testScope = "test,it"
@@ -30,6 +31,8 @@ object AppDependencies {
   val mockito =  "org.mockito" % "mockito-core" % mockitoVersion % testScope
 
   val customsApiCommon = "uk.gov.hmrc" %% "customs-api-common" % customsApiCommonVersion
+
+  val workItemRepo = "uk.gov.hmrc" %% "work-item-repo" % workItemRepoVersion
 
   val customsApiCommonTests = "uk.gov.hmrc" %% "customs-api-common" % customsApiCommonVersion % testScope classifier "tests"
 
