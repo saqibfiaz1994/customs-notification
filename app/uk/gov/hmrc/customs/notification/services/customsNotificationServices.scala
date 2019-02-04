@@ -44,8 +44,7 @@ class CustomsNotificationClientWorkerService @Inject()(logger: NotificationLogge
                                                        pullClientNotificationService: PullClientNotificationService)
   extends CustomsNotificationService {
 
-  // TODO: remove HeaderCarrier
-  def handleNotification(xml: NodeSeq, metaData: RequestMetaData)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  def handleNotification(xml: NodeSeq, metaData: RequestMetaData): Future[Boolean] = {
 
     val clientNotification = ClientNotification(metaData.clientSubscriptionId, Notification(metaData.conversationId,
       buildHeaders(metaData), xml.toString, MimeTypes.XML), None, Some(metaData.startTime.toDateTime))
@@ -77,11 +76,9 @@ class CustomsNotificationRetryService @Inject()(logger: NotificationLogger2,
                                                 pullClientNotificationRetryService: PullClientNotificationRetryService)
   extends CustomsNotificationService {
 
-  // TODO: remove HeaderCarrier
   def handleNotification(xml: NodeSeq,
                          metaData: RequestMetaData,
-                         apiSubscriptionFields: ApiSubscriptionFields)
-                        (implicit hc: HeaderCarrier): Future[Boolean] = {
+                         apiSubscriptionFields: ApiSubscriptionFields): Future[Boolean] = {
 
     val notificationWorkItem = NotificationWorkItem(metaData.clientSubscriptionId,
       ClientId(apiSubscriptionFields.clientId),

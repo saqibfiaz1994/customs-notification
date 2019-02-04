@@ -43,6 +43,7 @@ trait NotificationWorkItemRepo {
   def setCompletedStatus(id: BSONObjectID, status: ResultStatus): Future[Unit]
 }
 
+//TODO: use NotificationLogger2
 @Singleton
 class NotificationWorkItemMongoRepo @Inject()(mongoDbProvider: MongoDbProvider,
                                               clock: Clock,

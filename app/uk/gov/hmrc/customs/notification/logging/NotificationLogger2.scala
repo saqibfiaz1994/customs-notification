@@ -31,6 +31,9 @@ Current API is forcing us to create an implicit HeaderCarrier just so that we ca
 @Singleton
 class NotificationLogger2 @Inject()(logger: CdsLogger) {
 
+//  def debug(msg: => String): Unit = {
+//    logger.debug(msg)
+//  }
   def debug(msg: => String)(implicit rm: HasId): Unit = {
     logger.debug(format(msg, rm))
   }
