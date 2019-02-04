@@ -42,21 +42,21 @@ class NotificationLoggerSpec2 extends UnitSpec with MockitoSugar {
       logger.debug("msg")
 
       PassByNameVerifier(mockCdsLogger, "debug")
-        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=X-Badge-Identifier][eoriIdentifier=X-Eori-Identifier][correlationId=X-Correlation-ID] msg")
+        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] msg")
         .verify()
     }
     "debug(s: => String, url: => String)" in new SetUp {
       logger.debug("msg", "url")
 
       PassByNameVerifier(mockCdsLogger, "debug")
-        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=X-Badge-Identifier][eoriIdentifier=X-Eori-Identifier][correlationId=X-Correlation-ID] msg url=url\n")
+        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] msg url=url\n")
         .verify()
     }
     "debug(s: => String, url: => String, payload: => String)" in new SetUp {
       logger.debug("msg", "url", "payload")
 
       PassByNameVerifier(mockCdsLogger, "debug")
-        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=X-Badge-Identifier][eoriIdentifier=X-Eori-Identifier][correlationId=X-Correlation-ID] msg url=url\n\npayload=\npayload")
+        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] msg url=url\n\npayload=\npayload")
         .verify()
     }
 //    "debug(s: => String, headers: => SeqOfHeader)" in new SetUp {
@@ -70,7 +70,7 @@ class NotificationLoggerSpec2 extends UnitSpec with MockitoSugar {
       logger.info("msg")
 
       PassByNameVerifier(mockCdsLogger, "info")
-        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=X-Badge-Identifier][eoriIdentifier=X-Eori-Identifier][correlationId=X-Correlation-ID] msg")
+        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] msg")
         .verify()
     }
 //    "error(s: => String, headers: => SeqOfHeader)" in new SetUp {
@@ -84,14 +84,14 @@ class NotificationLoggerSpec2 extends UnitSpec with MockitoSugar {
       logger.error("msg")
 
       PassByNameVerifier(mockCdsLogger, "error")
-        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=X-Badge-Identifier][eoriIdentifier=X-Eori-Identifier][correlationId=X-Correlation-ID] msg")
+        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] msg")
         .verify()
     }
     "error(s: => String, t: => Throwable)" in new SetUp {
       logger.error("msg", new Exception("message"))
 
       PassByNameVerifier(mockCdsLogger, "error")
-        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=X-Badge-Identifier][eoriIdentifier=X-Eori-Identifier][correlationId=X-Correlation-ID] msg")
+        .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] msg")
         .withByNameParamMatcher[Throwable](any[Throwable])
         .verify()
     }

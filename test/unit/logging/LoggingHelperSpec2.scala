@@ -29,19 +29,20 @@ class LoggingHelperSpec2 extends UnitSpec {
   "LoggingHelper" should {
 
     "format" in {
-      LoggingHelper2.format(errorMsg, requestMetaData) shouldBe s"[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=X-Badge-Identifier][eoriIdentifier=X-Eori-Identifier][correlationId=X-Correlation-ID] $errorMsg"
+      val actual = LoggingHelper2.format(errorMsg, requestMetaData)
+      actual shouldBe s"[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] $errorMsg"
     }
 
     "format Debug with URL" in {
       val actual = LoggingHelper2.formatDebug(errorMsg, Some(url))(requestMetaData)
 
-      actual shouldBe "[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=X-Badge-Identifier][eoriIdentifier=X-Eori-Identifier][correlationId=X-Correlation-ID] ERROR url=http://some-url\n"
+      actual shouldBe "[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] ERROR url=http://some-url\n"
     }
 
     "format Debug with URL and Payload" in {
       val actual = LoggingHelper2.formatDebug(errorMsg, Some(url), Some("PAYLOAD"))(requestMetaData)
 
-      actual shouldBe "[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=X-Badge-Identifier][eoriIdentifier=X-Eori-Identifier][correlationId=X-Correlation-ID] ERROR url=http://some-url\n\npayload=\nPAYLOAD"
+      actual shouldBe "[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] ERROR url=http://some-url\n\npayload=\nPAYLOAD"
     }
 
 

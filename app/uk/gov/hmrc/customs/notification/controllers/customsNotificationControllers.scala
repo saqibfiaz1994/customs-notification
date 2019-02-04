@@ -37,10 +37,26 @@ import scala.xml.NodeSeq
 
 case class RequestMetaData(clientSubscriptionId: ClientSubscriptionId,
                            conversationId: ConversationId,
-                           mayBeBadgeId: Option[Header],
-                           mayBeEoriNumber: Option[Header],
-                           maybeCorrelationId: Option[Header],
+                           mayBeBadgeId: Option[BadgeId],
+                           mayBeEoriNumber: Option[Eori],
+                           maybeCorrelationId: Option[CorrelationId],
                            startTime: ZonedDateTime)
+//  extends HasId
+//  with HasConversationId
+//  with HasClientSubscriptionId
+//  with HasMaybeBadgeId
+//  with HasMaybeCorrelationId
+//  with HasMaybeEori
+{
+  def mayBeBadgeIdHeader: Option[Header] = asHeader(CustomHeaderNames.X_BADGE_ID_HEADER_NAME, mayBeBadgeId)
+
+  def mayBeEoriHeader: Option[Header] = asHeader(CustomHeaderNames.X_EORI_ID_HEADER_NAME, mayBeEoriNumber)
+
+  def mayBeCorrelationIdHeader: Option[Header] = asHeader(CustomHeaderNames.X_CORRELATION_ID_HEADER_NAME, maybeCorrelationId)
+
+  private def asHeader[T](name: String, maybeHeaderValue: Option[T]) =
+    maybeHeaderValue.map(v => Header(name = name, value = v.toString))
+}
 
 abstract class CustomsNotificationController @Inject()(val logger: NotificationLogger,
                                                        val customsNotificationService: CustomsNotificationService,
@@ -71,8 +87,8 @@ abstract class CustomsNotificationController @Inject()(val logger: NotificationL
     // headers have been validated so safe to do a naked get except badgeId, eori and correlation id which are optional
     RequestMetaData(ClientSubscriptionId(UUID.fromString(headers.get(X_CDS_CLIENT_ID_HEADER_NAME).get)),
       ConversationId(UUID.fromString(headers.get(X_CONVERSATION_ID_HEADER_NAME).get)),
-      findHeaderValue(X_BADGE_ID_HEADER_NAME, headers), findHeaderValue(X_EORI_ID_HEADER_NAME, headers),
-      findHeaderValue(X_CORRELATION_ID_HEADER_NAME, headers),
+      headers.get(X_BADGE_ID_HEADER_NAME).map(BadgeId), headers.get(X_EORI_ID_HEADER_NAME).map(Eori),
+      headers.get(X_CORRELATION_ID_HEADER_NAME).map(CorrelationId),
       startTime)
   }
 

@@ -46,3 +46,41 @@ object ClientId {
   }
 }
 
+case class Eori(id: String) extends AnyVal {
+  override def toString: String = id.toString
+}
+
+case class BadgeId(id: String) extends AnyVal {
+  override def toString: String = id.toString
+}
+
+case class CorrelationId(id: String) extends AnyVal {
+  override def toString: String = id.toString
+}
+
+trait HasId {
+  def name: String
+  def value: String
+}
+/*
+case class RequestMetaData(clientSubscriptionId: ClientSubscriptionId,
+                           conversationId: ConversationId,
+                           mayBeBadgeId: Option[Header],
+                           mayBeEoriNumber: Option[Header],
+                           maybeCorrelationId: Option[Header],
+                           startTime: ZonedDateTime)
+ */
+trait HasClientSubscriptionId {
+  def clientSubscriptionId: ClientSubscriptionId
+}
+trait HasMaybeBadgeId {
+  def mayBeBadgeId: Option[String]
+}
+trait HasMaybeEori {
+  def mayBeEoriNumber: Option[String]
+}
+trait HasMaybeCorrelationId {
+  def maybeCorrelationId: Option[String]
+}
+
+

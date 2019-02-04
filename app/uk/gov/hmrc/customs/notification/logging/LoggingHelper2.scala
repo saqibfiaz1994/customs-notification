@@ -85,11 +85,16 @@ object LoggingHelper2 {
 
   private def formatLogPrefix(rm: RequestMetaData): String = {
     s"[conversationId=${rm.conversationId}][fieldsId=${rm.clientSubscriptionId}]" +
-      headerValue("badgeId", rm.mayBeBadgeId) +
-      headerValue("eoriIdentifier", rm.mayBeEoriNumber) +
-      headerValue("correlationId", rm.maybeCorrelationId)
+      formatOptional("badgeId", rm.mayBeBadgeId) +
+      formatOptional("eoriIdentifier", rm.mayBeEoriNumber) +
+      formatOptional("correlationId", rm.maybeCorrelationId)
   }
 
+  private def formatOptional[T](name: String, maybeValue: Option[T]) = {
+    maybeValue.fold("")(h => s"[$name=${h.toString}]")
+  }
+
+  //TODO: remove
   private def headerValue(name: String, maybeHeader: Option[Header]) = {
     maybeHeader.fold("")(h => s"[$name=${h.name}]")
   }

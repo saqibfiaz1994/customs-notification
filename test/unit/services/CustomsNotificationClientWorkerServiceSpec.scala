@@ -48,7 +48,7 @@ class CustomsNotificationClientWorkerServiceSpec extends UnitSpec with MockitoSu
     X_CORRELATION_ID_HEADER_NAME -> correlationId))
 
   private val mockNotificationLogger = mock[NotificationLogger]
-  private val requestMetaData = RequestMetaData(clientSubscriptionId, conversationId, Some(Header(X_BADGE_ID_HEADER_NAME, badgeIdValue)), Some(Header(X_EORI_ID_HEADER_NAME, eoriNumber)), Some(Header(X_CORRELATION_ID_HEADER_NAME, correlationId)), TimeReceivedZoned)
+  private val requestMetaData = RequestMetaData(clientSubscriptionId, conversationId, Some(BadgeId(badgeIdValue)), Some(Eori(eoriNumber)), Some(CorrelationId(correlationId)), TimeReceivedZoned)
   private val mockClientNotificationRepo = mock[ClientNotificationRepo]
   private val mockNotificationDispatcher = mock[NotificationDispatcher]
   private val contentType = "application/xml"
