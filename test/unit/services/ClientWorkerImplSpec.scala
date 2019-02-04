@@ -24,9 +24,9 @@ import org.mockito.Mockito
 import org.mockito.Mockito.{when, _}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.connectors.ApiSubscriptionFieldsConnector
 import uk.gov.hmrc.customs.notification.domain.{ClientSubscriptionId, CustomsNotificationConfig, PullExcludeConfig}
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockOwnerId, LockRepo}
 import uk.gov.hmrc.customs.notification.services.{ClientWorkerImpl, PullClientNotificationService, PushClientNotificationService}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
@@ -53,7 +53,7 @@ class ClientWorkerImplSpec extends UnitSpec with MockitoSugar with Eventually {
     private[ClientWorkerImplSpec] val mockPull = mock[PullClientNotificationService]
     private[ClientWorkerImplSpec] val mockPush = mock[PushClientNotificationService]
     private[ClientWorkerImplSpec] val mockLockRepo = mock[LockRepo]
-    private[ClientWorkerImplSpec] val mockLogger = mock[NotificationLogger]
+    private[ClientWorkerImplSpec] val mockLogger = mock[CdsLogger]
     private[ClientWorkerImplSpec] val mockHttpResponse = mock[HttpResponse]
     private[ClientWorkerImplSpec] val mockPullExcludeConfig = mock[PullExcludeConfig]
     private[ClientWorkerImplSpec] val mockConfig = mock[CustomsNotificationConfig]
@@ -77,14 +77,12 @@ class ClientWorkerImplSpec extends UnitSpec with MockitoSugar with Eventually {
     def verifyLogError(msg: String): Unit = {
       PassByNameVerifier(mockLogger, "error")
         .withByNameParam(msg)
-        .withParamMatcher(any[HeaderCarrier])
         .verify()
     }
 
     def verifyLogInfo(msg: String): Unit = {
       PassByNameVerifier(mockLogger, "info")
         .withByNameParam(msg)
-        .withParamMatcher(any[HeaderCarrier])
         .verify()
     }
 

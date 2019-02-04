@@ -25,9 +25,9 @@ import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.connectors.ApiSubscriptionFieldsConnector
 import uk.gov.hmrc.customs.notification.domain.{ClientNotification, ClientSubscriptionId, CustomsNotificationConfig, PullExcludeConfig}
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockOwnerId, LockRepo}
 import uk.gov.hmrc.customs.notification.services.{ClientWorkerImpl, PullClientNotificationService, PushClientNotificationService}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -54,7 +54,7 @@ class ClientWorkerImplTimerSpec extends UnitSpec with MockitoSugar with Eventual
     private[ClientWorkerImplTimerSpec] val mockPull = mock[PullClientNotificationService]
     private[ClientWorkerImplTimerSpec] val mockPush = mock[PushClientNotificationService]
     private[ClientWorkerImplTimerSpec] val mockLockRepo = mock[LockRepo]
-    private[ClientWorkerImplTimerSpec] val mockLogger = mock[NotificationLogger]
+    private[ClientWorkerImplTimerSpec] val mockLogger = mock[CdsLogger]
     private[ClientWorkerImplTimerSpec] val mockPullExcludeConfig = mock[PullExcludeConfig]
     private[ClientWorkerImplTimerSpec] val mockConfig = mock[CustomsNotificationConfig]
 
@@ -71,17 +71,17 @@ class ClientWorkerImplTimerSpec extends UnitSpec with MockitoSugar with Eventual
         mockConfig
       )
       {
-        override protected def process(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId)(implicit hc: HeaderCarrier, refreshLockFailed: AtomicBoolean): Future[Unit] = {
+        override protected def process(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId)(implicit refreshLockFailed: AtomicBoolean): Future[Unit] = {
           scala.concurrent.blocking {
             Thread.sleep(outerProcessingDelayMilliseconds)
           }
-          super.process(csid, lockOwnerId)(hc, refreshLockFailed)
+          super.process(csid, lockOwnerId)(refreshLockFailed)
         }
-        override protected def blockingInnerPullLoop(clientNotifications: Seq[ClientNotification])(implicit hc: HeaderCarrier, refreshLockFailed: AtomicBoolean): Unit = {
+        override protected def blockingInnerPullLoop(clientNotifications: Seq[ClientNotification])(implicit refreshLockFailed: AtomicBoolean): Unit = {
           scala.concurrent.blocking {
             Thread.sleep(innerPullLoopDelayMilliseconds)
           }
-          super.blockingInnerPullLoop(clientNotifications)(hc, refreshLockFailed)
+          super.blockingInnerPullLoop(clientNotifications)(refreshLockFailed)
         }
 
       }
@@ -96,7 +96,6 @@ class ClientWorkerImplTimerSpec extends UnitSpec with MockitoSugar with Eventual
     def verifyLogError(msg: String): Unit = {
       PassByNameVerifier(mockLogger, "error")
         .withByNameParam(msg)
-        .withParamMatcher(any[HeaderCarrier])
         .verify()
     }
 
