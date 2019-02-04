@@ -19,8 +19,8 @@ package uk.gov.hmrc.customs.notification.services
 import javax.inject.{Inject, Singleton}
 import play.api.http.MimeTypes
 import uk.gov.hmrc.customs.notification.controllers.RequestMetaData
-import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
+import uk.gov.hmrc.customs.notification.domain.{HasId, _}
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, NotificationWorkItemRepo}
 import uk.gov.hmrc.customs.notification.util.DateTimeHelpers._
 import uk.gov.hmrc.http.HeaderCarrier
@@ -38,22 +38,22 @@ trait CustomsNotificationService {
 }
 
 @Singleton
-class CustomsNotificationClientWorkerService @Inject()(logger: NotificationLogger,
+class CustomsNotificationClientWorkerService @Inject()(logger: NotificationLogger2,
                                                        clientNotificationRepo: ClientNotificationRepo,
                                                        notificationDispatcher: NotificationDispatcher,
                                                        pullClientNotificationService: PullClientNotificationService)
   extends CustomsNotificationService {
 
+  // TODO: remove HeaderCarrier
   def handleNotification(xml: NodeSeq, metaData: RequestMetaData)(implicit hc: HeaderCarrier): Future[Boolean] = {
 
     val clientNotification = ClientNotification(metaData.clientSubscriptionId, Notification(metaData.conversationId,
       buildHeaders(metaData), xml.toString, MimeTypes.XML), None, Some(metaData.startTime.toDateTime))
 
-    saveNotificationToDatabaseAndCallDispatcher(clientNotification, metaData)
+    saveNotificationToDatabaseAndCallDispatcher(clientNotification)(metaData)
   }
 
-  private def saveNotificationToDatabaseAndCallDispatcher(clientNotification: ClientNotification,
-                                                          metaData: RequestMetaData)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  private def saveNotificationToDatabaseAndCallDispatcher(clientNotification: ClientNotification)(implicit metaData: HasId): Future[Boolean] = {
 
     clientNotificationRepo.save(clientNotification).map {
       case true =>
@@ -71,12 +71,13 @@ class CustomsNotificationClientWorkerService @Inject()(logger: NotificationLogge
 }
 
 @Singleton
-class CustomsNotificationRetryService @Inject()(logger: NotificationLogger,
+class CustomsNotificationRetryService @Inject()(logger: NotificationLogger2,
                                                 notificationWorkItemRepo: NotificationWorkItemRepo,
                                                 pushClientNotificationRetryService: PushClientNotificationRetryService,
                                                 pullClientNotificationRetryService: PullClientNotificationRetryService)
   extends CustomsNotificationService {
 
+  // TODO: remove HeaderCarrier
   def handleNotification(xml: NodeSeq,
                          metaData: RequestMetaData,
                          apiSubscriptionFields: ApiSubscriptionFields)
@@ -87,12 +88,12 @@ class CustomsNotificationRetryService @Inject()(logger: NotificationLogger,
       Some(metaData.startTime.toDateTime),
       Notification(metaData.conversationId, buildHeaders(metaData), xml.toString, MimeTypes.XML))
 
-      saveNotificationToDatabaseAndPushOrPull(notificationWorkItem, apiSubscriptionFields)
+      saveNotificationToDatabaseAndPushOrPull(notificationWorkItem, apiSubscriptionFields)(metaData)
   }
 
   private def saveNotificationToDatabaseAndPushOrPull(notificationWorkItem: NotificationWorkItem,
                                                 apiSubscriptionFields: ApiSubscriptionFields)
-                                               (implicit hc: HeaderCarrier): Future[Boolean] = {
+                                               (implicit rm: HasId): Future[Boolean] = {
 
     notificationWorkItemRepo.saveWithLock(notificationWorkItem).flatMap { workItem =>
       val pushPullResult = if (apiSubscriptionFields.fields.callbackUrl.isEmpty) {
