@@ -17,10 +17,9 @@
 package uk.gov.hmrc.customs.notification.logging
 
 import play.api.http.HeaderNames.AUTHORIZATION
-import uk.gov.hmrc.customs.notification.controllers.{CustomHeaderNames, RequestMetaData}
-import uk.gov.hmrc.customs.notification.domain.{ClientNotification, ClientSubscriptionId, ConversationId, Header}
+import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames
+import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.model.SeqOfHeader
-import uk.gov.hmrc.http.HeaderCarrier
 
 /*
 TODO: Logging framework needs to be refactored so that we pass in an implicit RequestMetaData/LoggingContext object down the call stack rather than SeqOfHeader
@@ -58,12 +57,12 @@ object LoggingHelper2 {
 //    s"${formatLogPrefix(rm)} $msg"
 //  }
 
-  def format(msg: String, rm: RequestMetaData): String = {
+  def format(msg: String, rm: HasId): String = {
     s"${formatLogPrefix(rm)} $msg"
   }
 
 
-  def formatDebug(msg: String, maybeUrl: Option[String] = None, maybePayload: Option[String] = None)(implicit rm: RequestMetaData): String = {
+  def formatDebug(msg: String, maybeUrl: Option[String] = None, maybePayload: Option[String] = None)(implicit rm: HasId): String = {
 //    val headers = hc.headers
     val urlPart = maybeUrl.fold("")(url => s" url=$url")
     val payloadPart = maybePayload.fold("")(payload => s"\npayload=\n$payload")
@@ -83,20 +82,33 @@ object LoggingHelper2 {
 
 
 
-  private def formatLogPrefix(rm: RequestMetaData): String = {
-    s"[conversationId=${rm.conversationId}][fieldsId=${rm.clientSubscriptionId}]" +
-      formatOptional("badgeId", rm.mayBeBadgeId) +
-      formatOptional("eoriIdentifier", rm.mayBeEoriNumber) +
-      formatOptional("correlationId", rm.maybeCorrelationId)
+  private def formatLogPrefix(rm: HasId): String = {
+    def fieldsId = rm match {
+      case has: HasClientSubscriptionId =>
+        s"[fieldsId=${has.clientSubscriptionId}]"
+      case _ => ""
+    }
+    def correlationId = rm match {
+      case has: HasMaybeCorrelationId =>
+        formatOptional("correlationId", has.maybeCorrelationId)
+      case _ => ""
+    }
+    def badgeId = rm match {
+      case has: HasMaybeBadgeId =>
+        formatOptional("badgeId", has.mayBeBadgeId)
+      case _ => ""
+    }
+    def eori = rm match {
+      case has: HasMaybeEori =>
+        formatOptional("eoriIdentifier", has.mayBeEoriNumber)
+      case _ => ""
+    }
+
+    s"[${rm.idName}=${rm.idValue}]$fieldsId$badgeId$eori$correlationId"
   }
 
   private def formatOptional[T](name: String, maybeValue: Option[T]) = {
     maybeValue.fold("")(h => s"[$name=${h.toString}]")
-  }
-
-  //TODO: remove
-  private def headerValue(name: String, maybeHeader: Option[Header]) = {
-    maybeHeader.fold("")(h => s"[$name=${h.name}]")
   }
 
   private def findHeaderValue(headerName: String, headers: SeqOfHeader): Option[String] = {

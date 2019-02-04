@@ -19,7 +19,7 @@ package uk.gov.hmrc.customs.notification.logging
 import com.google.inject.Inject
 import javax.inject.Singleton
 import uk.gov.hmrc.customs.api.common.logging.CdsLogger
-import uk.gov.hmrc.customs.notification.controllers.RequestMetaData
+import uk.gov.hmrc.customs.notification.domain.HasId
 import uk.gov.hmrc.customs.notification.logging.LoggingHelper2.{format, formatDebug, formatWithHeaders}
 import uk.gov.hmrc.customs.notification.model.SeqOfHeader
 
@@ -31,29 +31,31 @@ Current API is forcing us to create an implicit HeaderCarrier just so that we ca
 @Singleton
 class NotificationLogger2 @Inject()(logger: CdsLogger) {
 
-  def debug(msg: => String)(implicit rm: RequestMetaData): Unit = {
+  def debug(msg: => String)(implicit rm: HasId): Unit = {
     logger.debug(format(msg, rm))
   }
-  def debug(msg: => String, url: => String)(implicit rm: RequestMetaData): Unit = {
+  def debug(msg: => String, url: => String)(implicit rm: HasId): Unit = {
     logger.debug(formatDebug(msg, Some(url)))
   }
-  def debug(msg: => String, url: => String, payload: => String)(implicit rm: RequestMetaData): Unit = {
+  def debug(msg: => String, url: => String, payload: => String)(implicit rm: HasId): Unit = {
     logger.debug(formatDebug(msg, Some(url), Some(payload)))
   }
 
+  @deprecated //TODO: inline headers processsing
   def debugWithHeaders(msg: => String, headers: => SeqOfHeader): Unit = logger.debug(formatWithHeaders(msg, headers))
 
 //  def debug(msg: => String, rm: RequestMetaData): Unit = logger.debug(formatDebug(msg, rm))
-  def info(msg: => String)(implicit rm: RequestMetaData): Unit = {
+  def info(msg: => String)(implicit rm: HasId): Unit = {
     logger.info(format(msg, rm))
   }
+  @deprecated //TODO: inline headers processsing
   def errorWithHeaders(msg: => String, headers: => SeqOfHeader): Unit = logger.error(formatWithHeaders(msg, headers))
 
-  def error(msg: => String)(implicit rm: RequestMetaData): Unit = {
+  def error(msg: => String)(implicit rm: HasId): Unit = {
     logger.error(format(msg, rm))
   }
 //  def error(msg: => String, rm: RequestMetaData): Unit = logger.error(formatError(msg, rm))
-  def error(msg: => String, t: => Throwable)(implicit rm: RequestMetaData): Unit = {
+  def error(msg: => String, t: => Throwable)(implicit rm: HasId): Unit = {
     logger.error(format(msg, rm), t)
   }
   def debugWithoutRequestContext(s: => String): Unit = {

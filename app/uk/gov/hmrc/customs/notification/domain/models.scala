@@ -59,28 +59,21 @@ case class CorrelationId(id: String) extends AnyVal {
 }
 
 trait HasId {
-  def name: String
-  def value: String
+  def idName: String
+  def idValue: String
 }
-/*
-case class RequestMetaData(clientSubscriptionId: ClientSubscriptionId,
-                           conversationId: ConversationId,
-                           mayBeBadgeId: Option[Header],
-                           mayBeEoriNumber: Option[Header],
-                           maybeCorrelationId: Option[Header],
-                           startTime: ZonedDateTime)
- */
+
 trait HasClientSubscriptionId {
   def clientSubscriptionId: ClientSubscriptionId
 }
 trait HasMaybeBadgeId {
-  def mayBeBadgeId: Option[String]
+  def mayBeBadgeId: Option[BadgeId]
 }
 trait HasMaybeEori {
-  def mayBeEoriNumber: Option[String]
+  def mayBeEoriNumber: Option[Eori]
 }
 trait HasMaybeCorrelationId {
-  def maybeCorrelationId: Option[String]
+  def maybeCorrelationId: Option[CorrelationId]
 }
 
 

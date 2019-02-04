@@ -22,13 +22,13 @@ import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.customs.api.common.controllers.ErrorResponse.{ErrorAcceptHeaderInvalid, ErrorContentTypeHeaderInvalid, ErrorGenericBadRequest}
 import uk.gov.hmrc.customs.notification.controllers.CustomErrorResponses._
 import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames.{X_CDS_CLIENT_ID_HEADER_NAME, X_CONVERSATION_ID_HEADER_NAME, X_CORRELATION_ID_HEADER_NAME}
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 
 import scala.concurrent.Future
 
 trait HeaderValidator {
 
-  val notificationLogger: NotificationLogger
+  val notificationLogger: NotificationLogger2
 
   private val uuidRegex = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 
@@ -41,7 +41,7 @@ trait HeaderValidator {
     def invokeBlock[A](request: Request[A], block: Request[A] => Future[Result]): Future[Result] = {
       implicit val headers: Headers = request.headers
       val logMessage = "Received notification"
-      notificationLogger.debug(logMessage, headers.headers)
+      notificationLogger.debugWithHeaders(logMessage, headers.headers)
 
       if (!hasAccept) {
         Future.successful(ErrorAcceptHeaderInvalid.XmlResult)
@@ -124,8 +124,8 @@ trait HeaderValidator {
   private def logValidationResult(headerName: => String, validationResult: => Boolean)(implicit h: Headers): Unit = {
     val resultText = if (validationResult) "passed" else "failed"
     val msg = s"$headerName header $resultText validation"
-    notificationLogger.debug(msg, h.headers)
-    if (!validationResult) notificationLogger.error(msg, h.headers)
+    notificationLogger.debugWithHeaders(msg, h.headers)
+    if (!validationResult) notificationLogger.errorWithHeaders(msg, h.headers)
   }
 }
 

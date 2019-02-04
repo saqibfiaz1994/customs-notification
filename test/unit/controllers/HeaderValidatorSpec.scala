@@ -26,7 +26,7 @@ import uk.gov.hmrc.customs.api.common.controllers.ErrorResponse.{ErrorAcceptHead
 import uk.gov.hmrc.customs.notification.controllers.CustomErrorResponses._
 import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames.{X_CDS_CLIENT_ID_HEADER_NAME, X_CONVERSATION_ID_HEADER_NAME, X_CORRELATION_ID_HEADER_NAME}
 import uk.gov.hmrc.customs.notification.controllers.HeaderValidator
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 import uk.gov.hmrc.play.test.UnitSpec
 import util.RequestHeaders._
 import util.TestData.basicAuthTokenValue
@@ -36,7 +36,7 @@ import scala.util.Random
 class HeaderValidatorSpec extends UnitSpec with MockitoSugar with TableDrivenPropertyChecks {
 
   private val validator = new HeaderValidator {
-    override val notificationLogger: NotificationLogger = mock[NotificationLogger]
+    override val notificationLogger: NotificationLogger2 = mock[NotificationLogger2]
   }
 
   private val withAuthTokenConfigured: Action[AnyContent] = validator.validateHeaders(Some(basicAuthTokenValue)) async {
