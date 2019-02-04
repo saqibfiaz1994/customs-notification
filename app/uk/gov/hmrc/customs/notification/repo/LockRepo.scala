@@ -35,8 +35,7 @@ import scala.concurrent.Future
 case class LockOwnerId(id: String) extends AnyVal
 
 @Singleton
-class LockRepo @Inject()(mongoDbProvider: MongoDbProvider,
-                         notificationLogger: NotificationLogger) extends CurrentTime {
+class LockRepo @Inject()(mongoDbProvider: MongoDbProvider) extends CurrentTime {
 
   val repo = new LockRepository()(mongoDbProvider.mongo)
 

@@ -36,14 +36,12 @@ class LockRepoSpec extends UnitSpec
   with BeforeAndAfterAll
   with BeforeAndAfterEach { self =>
   val lockRepository = new LockRepository
-  private val mockNotificationLogger = mock[NotificationLogger]
-
 
   private val mongoDbProvider: MongoDbProvider = new MongoDbProvider {
     override val mongo: () => DB = self.mongo
   }
 
-  val lockRepo: LockRepo = new LockRepo(mongoDbProvider, mockNotificationLogger)
+  val lockRepo: LockRepo = new LockRepo(mongoDbProvider)
 
   override def beforeEach() {
     await(lockRepository.drop)

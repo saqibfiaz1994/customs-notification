@@ -16,18 +16,17 @@
 
 package uk.gov.hmrc.customs.notification.repo
 
-import javax.inject.{Inject, Singleton}
-
 import com.google.inject.ImplementedBy
+import javax.inject.{Inject, Singleton}
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{JsNumber, Json}
 import reactivemongo.api.Cursor
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.JsObjectDocumentWriter
+import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.domain.{ClientNotification, ClientSubscriptionId, CustomsNotificationConfig}
 import uk.gov.hmrc.customs.notification.logging.LoggingHelper.logMsgPrefix
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.ReactiveRepository
 
@@ -53,7 +52,7 @@ class ClientNotificationMongoRepo @Inject()(configService: CustomsNotificationCo
                                             mongoDbProvider: MongoDbProvider,
                                             lockRepo: LockRepo,
                                             errorHandler: ClientNotificationRepositoryErrorHandler,
-                                            notificationLogger: NotificationLogger)
+                                            notificationLogger: CdsLogger)
   extends ReactiveRepository[ClientNotification, BSONObjectID](
     collectionName = "notifications",
     mongo = mongoDbProvider.mongo,
