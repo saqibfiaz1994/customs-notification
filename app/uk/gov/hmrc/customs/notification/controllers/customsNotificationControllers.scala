@@ -127,10 +127,6 @@ implicit val hc = HeaderCarrier()
     }
   }
 
-  private def findHeaderValue(headerName: String, headers: Headers): Option[Header] = {
-    headers.get(headerName).map(Header(headerName, _))
-  }
-
   def handleNotification(xml: NodeSeq, md: RequestMetaData, apiSubscriptionFields: ApiSubscriptionFields)(implicit hc: HeaderCarrier): Future[Boolean]
 }
 

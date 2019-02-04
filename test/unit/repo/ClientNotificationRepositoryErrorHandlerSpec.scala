@@ -22,12 +22,11 @@ import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.domain.ClientNotification
 import uk.gov.hmrc.customs.notification.repo.ClientNotificationRepositoryErrorHandler
 import uk.gov.hmrc.play.test.UnitSpec
-import unit.logging.StubNotificationLogger
 
 class ClientNotificationRepositoryErrorHandlerSpec extends UnitSpec with MockitoSugar {
 
-  private val mockNotificationLogger = new StubNotificationLogger(mock[CdsLogger])
-  private val errorHandler = new ClientNotificationRepositoryErrorHandler(mockNotificationLogger)
+  private val mockCdsLogger = mock[CdsLogger]
+  private val errorHandler = new ClientNotificationRepositoryErrorHandler(mockCdsLogger)
   private val notification = mock[ClientNotification]
 
   "NotificationRepositoryErrorHandler" can {
