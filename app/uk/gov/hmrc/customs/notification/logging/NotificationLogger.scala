@@ -31,14 +31,30 @@ Current API is forcing us to create an implicit HeaderCarrier just so that we ca
 @Singleton
 class NotificationLogger @Inject()(logger: CdsLogger) {
 
+/*
+TODO: recaclculate usages
+TODO: inline usages with ONE and delete API method
+TODO: delete API method in 2
+TODO: Add traits eg Id(name/value), simple traits
+ */
+
+  // 19 usages
   def debug(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, None, None))
+  // 1 usages
   def debug(msg: => String, url: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, Some(url), None))
+  // 1 usages
   def debug(msg: => String, url: => String, payload: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, Some(url), Some(payload)))
+  // 4 usages
   def debug(msg: => String, headers: => SeqOfHeader): Unit = logger.debug(formatDebug(msg, headers))
+  // 13 usages
   def info(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.info(formatInfo(msg))
+  // 24 usages
   def error(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg))
+  // 1 usages
   def error(msg: => String, headers: => SeqOfHeader): Unit = logger.error(formatError(msg, headers))
+  // 1 usages
   def error(msg: => String, t: => Throwable)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg), t)
+  // 4 usages
   def debugWithoutRequestContext(s: => String): Unit = logger.debug(s)
 
 }
