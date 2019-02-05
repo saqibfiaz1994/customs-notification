@@ -29,11 +29,11 @@ import uk.gov.hmrc.customs.notification.domain.{CustomsNotificationConfig, Email
 import uk.gov.hmrc.customs.notification.repo.ClientNotificationRepo
 import uk.gov.hmrc.customs.notification.services.FailedPushEmailPollingService
 import uk.gov.hmrc.play.test.UnitSpec
-import unit.logging.StubNotificationLogger
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class FailedPushEmailPollingServiceSpec extends UnitSpec with MockitoSugar with Eventually {
 
@@ -42,7 +42,7 @@ class FailedPushEmailPollingServiceSpec extends UnitSpec with MockitoSugar with 
     val mockClientNotificationRepo = mock[ClientNotificationRepo]
     val mockEmailConnector = mock[EmailConnector]
     val mockCustomsNotificationConfig = mock[CustomsNotificationConfig]
-    val notificationLogger = new StubNotificationLogger(mock[CdsLogger])
+    val notificationLogger = mock[CdsLogger]
     val mockPullExcludeConfig = mock[PullExcludeConfig]
     val testActorSystem = ActorSystem("FailedPushEmailPollingService")
     val mockActorSystem = mock[ActorSystem]
