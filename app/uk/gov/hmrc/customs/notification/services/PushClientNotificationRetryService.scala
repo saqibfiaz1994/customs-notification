@@ -19,9 +19,8 @@ package uk.gov.hmrc.customs.notification.services
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.customs.notification.connectors.CustomsNotificationMetricsConnector
 import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 import uk.gov.hmrc.customs.notification.util.DateTimeHelpers._
-import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -29,17 +28,13 @@ import scala.concurrent.Future
 @Singleton
 class PushClientNotificationRetryService @Inject()(retryService: RetryService,
                                                    outboundSwitchService: OutboundSwitchService,
-                                                   notificationLogger: NotificationLogger,
+                                                   notificationLogger: NotificationLogger2,
                                                    metricsConnector: CustomsNotificationMetricsConnector,
                                                    dateTimeService: DateTimeService) {
 
-  //TODO remove this after log refactoring
-  private implicit val hc = HeaderCarrier()
-
-  def send(apiSubscriptionFields: ApiSubscriptionFields, notificationWorkItem: NotificationWorkItem): Future[Boolean] = {
+  def send(apiSubscriptionFields: ApiSubscriptionFields, notificationWorkItem: NotificationWorkItem)(implicit hasId: HasId): Future[Boolean] = {
     val pushNotificationRequest = pushNotificationRequestFrom(apiSubscriptionFields.fields, notificationWorkItem)
-    // data is for logging
-    // TODO: We need a general logging refactor
+    //TODO: remove - data is for logging
     implicit val implicitConversationId = notificationWorkItem.notification.conversationId
 
     notificationWorkItem.metricsStartDateTime.fold() { startTime =>
@@ -47,7 +42,7 @@ class PushClientNotificationRetryService @Inject()(retryService: RetryService,
         "NOTIFICATION", notificationWorkItem.notification.conversationId, startTime.toZonedDateTime, dateTimeService.zonedDateTimeUtc))
     }
 
-    notificationLogger.debug(s"pushing notification with clientSubscriptionId ${notificationWorkItem.id.toString} and conversationId: ${notificationWorkItem.notification.conversationId.toString} ")
+    notificationLogger.debug(s"pushing notification")
     retryService.retry(
       outboundSwitchService.send(ClientId(apiSubscriptionFields.clientId), pushNotificationRequest)
     )
@@ -55,7 +50,7 @@ class PushClientNotificationRetryService @Inject()(retryService: RetryService,
       case Right(_) =>
         true
       case Left(resultError) =>
-        notificationLogger.error(s"failed to push notification with clientSubscriptionId ${pushNotificationRequest.clientSubscriptionId} and conversationId ${pushNotificationRequest.body.conversationId} due to: ${resultError.cause.getMessage}")
+        notificationLogger.error(s"failed to push notification due to: ${resultError.cause.getMessage}")
         false
     }
   }

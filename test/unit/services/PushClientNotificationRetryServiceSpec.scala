@@ -26,8 +26,8 @@ import org.scalatest.mockito.MockitoSugar
 import play.api.test.Helpers.BAD_REQUEST
 import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.connectors.CustomsNotificationMetricsConnector
-import uk.gov.hmrc.customs.notification.domain.{ClientId, CustomsNotificationsMetricsRequest, HttpResultError, PushNotificationConfig}
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
+import uk.gov.hmrc.customs.notification.domain._
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 import uk.gov.hmrc.customs.notification.services.config.ConfigService
 import uk.gov.hmrc.customs.notification.services.{DateTimeService, OutboundSwitchService, PushClientNotificationRetryService, RetryService}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
@@ -43,7 +43,7 @@ class PushClientNotificationRetryServiceSpec extends UnitSpec with MockitoSugar 
 
   private val mockCdsLogger = mock[CdsLogger]
   private val mockOutboundSwitchService = mock[OutboundSwitchService]
-  private val notificationLogger = mock[NotificationLogger]
+  private val notificationLogger = mock[NotificationLogger2]
   private val mockCustomsNotificationsMetricsConnector = mock[CustomsNotificationMetricsConnector]
   private val mockDateTimeService = mock[DateTimeService]
   private val mockHttpResponse = mock[HttpResponse]
@@ -55,6 +55,7 @@ class PushClientNotificationRetryServiceSpec extends UnitSpec with MockitoSugar 
   private val retryService = new RetryService(mockConfigService, mockCdsLogger, ActorSystem("PushClientNotificationRetryServiceSpec"))
   private val pushService = new PushClientNotificationRetryService(retryService, mockOutboundSwitchService,
     notificationLogger, mockCustomsNotificationsMetricsConnector, mockDateTimeService)
+  private implicit val implicitRequestMetaData = requestMetaData
 
   override protected def beforeEach(): Unit = {
     reset(mockOutboundSwitchService, mockCustomsNotificationsMetricsConnector, mockDateTimeService,
@@ -94,7 +95,7 @@ class PushClientNotificationRetryServiceSpec extends UnitSpec with MockitoSugar 
 
       result shouldBe false
       verifyZeroInteractions(mockCustomsNotificationsMetricsConnector)
-      logVerifier("error", "failed to push notification with clientSubscriptionId eaca01f9-ec3b-4ede-b263-61b626dde232 and conversationId eaca01f9-ec3b-4ede-b263-61b626dde231 due to: Emulated service failure.")
+      logVerifier("error", "failed to push notification due to: Emulated service failure.")
     }
   }
 
@@ -111,7 +112,7 @@ class PushClientNotificationRetryServiceSpec extends UnitSpec with MockitoSugar 
   private def logVerifier(logLevel: String, logText: String): Unit = {
     PassByNameVerifier(notificationLogger, logLevel)
       .withByNameParam(logText)
-      .withParamMatcher(any[HeaderCarrier])
+      .withParamMatcher(any[HasId])
       .verify()
   }
 }

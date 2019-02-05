@@ -63,6 +63,8 @@ class CustomsNotificationRetryServiceSpec extends UnitSpec with MockitoSugar wit
     mockPullService
   )
 
+  private implicit val implicitRequestMetaData = requestMetaData
+
   override protected def beforeEach() {
     reset(mockNotificationWorkItemRepo, mockNotificationLogger, mockPushService, mockPullService)
     when(mockPushService.send(ApiSubscriptionFieldsOneForPush, NotificationWorkItemWithMetricsTime1)).thenReturn(Future.successful(true))
