@@ -55,7 +55,7 @@ class OutboundSwitchService @Inject()(configService: ConfigService,
     }
   }
 
-  private def internalPushWithAuditing(pnr: PushNotificationRequest): Future[Either[ResultError, HttpResponse]] = {
+  private def internalPushWithAuditing(pnr: PushNotificationRequest)(implicit rm: HasId): Future[Either[ResultError, HttpResponse]] = {
 
     val eventuallyEither: Future[Either[ResultError, HttpResponse]] = internalPush.send(pnr).map{
       case r@Right(_) =>

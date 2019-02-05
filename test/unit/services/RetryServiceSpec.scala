@@ -27,7 +27,7 @@ import uk.gov.hmrc.customs.notification.services.{OutboundSwitchService, RetrySe
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.test.UnitSpec
 import unit.services.ClientWorkerTestData.{ClientIdOne, pnrOne}
-import util.TestData._
+import util.TestData
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -43,6 +43,8 @@ class RetryServiceSpec extends UnitSpec with MockitoSugar  {
     val clientId = ClientIdOne
     val request = pnrOne
     val mockConnector = mock[OutboundSwitchService]
+    implicit val rm = TestData.requestMetaData
+
     def futureCall: Future[Either[ResultError, HttpResponse]] = {
       mockConnector.send(clientId, request)
     }
@@ -57,7 +59,6 @@ class RetryServiceSpec extends UnitSpec with MockitoSugar  {
     val mockConfigService = mock[ConfigService]
     val mockPushNotificationConfig = mock[PushNotificationConfig]
     val retryService = new RetryService(mockConfigService, mockLogger, ActorSystem("RetryServiceSpec"))
-    implicit val rm = requestMetaData
 
     when(mockConfigService.pushNotificationConfig).thenReturn(mockPushNotificationConfig)
     when(mockPushNotificationConfig.retryDelay).thenReturn(500 milliseconds)

@@ -16,14 +16,12 @@
 
 package uk.gov.hmrc.customs.notification.services
 
-import java.util.UUID.fromString
-
 import com.google.inject.Inject
 import javax.inject.Singleton
 import play.api.libs.json.{JsObject, JsString, JsValue}
 import uk.gov.hmrc.customs.api.common.config.ServicesConfig
 import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.{LoggingHelper, NotificationLogger}
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.EventKeys.TransactionName
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -34,7 +32,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 @Singleton
-class AuditingService @Inject()(logger: NotificationLogger, servicesConfig: ServicesConfig, auditConnector: AuditConnector) {
+class AuditingService @Inject()(logger: NotificationLogger2, servicesConfig: ServicesConfig, auditConnector: AuditConnector) {
 
   private val appName = "customs-notification"
   private val transactionNameValue = "customs-declaration-outbound-call"
@@ -47,19 +45,17 @@ class AuditingService @Inject()(logger: NotificationLogger, servicesConfig: Serv
 
   private val failureReasonKey = "failureReason"
 
-  def auditFailedNotification(pnr: PushNotificationRequest, failureReason: Option[String]): Unit = {
+  def auditFailedNotification(pnr: PushNotificationRequest, failureReason: Option[String])(implicit rm: HasId): Unit = {
     auditNotification(pnr, "FAILURE", failureReason)
   }
 
-  def auditSuccessfulNotification(pnr: PushNotificationRequest): Unit = {
+  def auditSuccessfulNotification(pnr: PushNotificationRequest)(implicit rm: HasId): Unit = {
     auditNotification(pnr, "SUCCESS", None)
   }
 
-  private def auditNotification(pnr: PushNotificationRequest, successOrFailure: String, failureReason: Option[String]): Unit = {
+  private def auditNotification(pnr: PushNotificationRequest, successOrFailure: String, failureReason: Option[String])(implicit rm: HasId): Unit = {
 
     implicit val carrier = HeaderCarrier()
-    val logPrefix = LoggingHelper.logMsgPrefix(ClientSubscriptionId(fromString(pnr.clientSubscriptionId)),
-      ConversationId(fromString(pnr.body.conversationId)))
 
     val tags = Map(TransactionName -> transactionNameValue,
     xConversationId -> pnr.body.conversationId )
@@ -89,14 +85,14 @@ class AuditingService @Inject()(logger: NotificationLogger, servicesConfig: Serv
         detail = detail
     )).onComplete {
       case Success(auditResult) =>
-        logger.info(s"${logPrefix}successfully audited $successOrFailure event")
+        logger.info(s"successfully audited $successOrFailure event")
         logger.debug(
-          s"""${logPrefix}successfully audited $successOrFailure event with
+          s"""successfully audited $successOrFailure event with
              |payload url=${pnr.body.url}
              |payload headers=${pnr.body.outboundCallHeaders}
-             |audit response=$auditResult""".stripMargin, Seq())
+             |audit response=$auditResult""".stripMargin)
       case Failure(ex) =>
-        logger.error(s"${logPrefix}failed to audit $successOrFailure event", ex)
+        logger.error(s"failed to audit $successOrFailure event", ex)
     }
   }
 }

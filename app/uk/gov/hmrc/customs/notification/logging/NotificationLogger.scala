@@ -46,12 +46,8 @@ raise PR
 
   // 1 usages FailedPushEmailPollingService.scala
   def debug(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, None, None))
-  // 1 usages AuditingService.scala
-  def debug(msg: => String, headers: => SeqOfHeader): Unit = logger.debug(formatDebug(msg, headers))
-  // 1 usages AuditingService.scala, FailedPushEmailPollingService.scala
+  // 1 usages FailedPushEmailPollingService.scala
   def info(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.info(formatInfo(msg))
-  // 1 AuditingService.scala
-  def error(msg: => String, t: => Throwable)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg), t)
 
   //DONE
   // 1 usages only in NotificationLoggerSpec
@@ -64,6 +60,10 @@ raise PR
   def debugWithoutRequestContext(s: => String): Unit = logger.debug(s)
   // 1 only in Test
   def error(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg))
+  // 1 in test
+  def error(msg: => String, t: => Throwable)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg), t)
+  // 1 in test
+  def debug(msg: => String, headers: => SeqOfHeader): Unit = logger.debug(formatDebug(msg, headers))
 
 }
 
