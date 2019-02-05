@@ -19,7 +19,7 @@ package uk.gov.hmrc.customs.notification.services
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.connectors._
-import uk.gov.hmrc.customs.notification.domain.{ClientId, HttpResultError, PushNotificationRequest, ResultError}
+import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.services.config.ConfigService
 import uk.gov.hmrc.http.HttpResponse
 
@@ -34,7 +34,7 @@ class OutboundSwitchService @Inject()(configService: ConfigService,
                                       logger: CdsLogger
                                      ) {
 
-  def send(clientId: ClientId, pnr: PushNotificationRequest): Future[Either[ResultError, HttpResponse]] = {
+  def send(clientId: ClientId, pnr: PushNotificationRequest)(implicit rm: HasId): Future[Either[ResultError, HttpResponse]] = {
 
     val response: (String, Future[Either[ResultError, HttpResponse]]) =
       if (configService.pushNotificationConfig.internalClientIds.contains(clientId.toString)) {

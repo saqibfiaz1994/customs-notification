@@ -48,6 +48,11 @@ class PushClientNotificationService @Inject() (outboundSwitchService: OutboundSw
         "NOTIFICATION", clientNotification.notification.conversationId, startTime.toZonedDateTime, dateTimeService.zonedDateTimeUtc))
     }
 
+    implicit val loggingContext = new HasId {
+      override def idName: String = "conversationId"
+      override def idValue: String = clientNotification.notification.conversationId.toString
+    }
+
     val either: Either[ResultError, HttpResponse] = scala.concurrent.blocking {
       Await.result(outboundSwitchService.send(ClientId(apiSubscriptionFields.clientId), pushNotificationRequest), Duration.apply(25, TimeUnit.SECONDS))
     }

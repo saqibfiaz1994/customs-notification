@@ -30,6 +30,7 @@ import uk.gov.hmrc.http.{HttpException, HttpResponse}
 import uk.gov.hmrc.play.test.UnitSpec
 import unit.services.ClientWorkerTestData._
 import util.MockitoPassByNameHelper.PassByNameVerifier
+import util.TestData
 
 import scala.concurrent.Future
 
@@ -43,7 +44,7 @@ class OutboundSwitchServiceSpec extends UnitSpec with MockitoSugar with Eventual
     val mockHttpResponse = mock[HttpResponse]
     val mockAuditingService = mock[AuditingService]
     val mockLogger = mock[CdsLogger]
-
+    implicit val rm = TestData.requestMetaData
     val switcher = new OutboundSwitchService(mockConfigService, mockExternalConnector, mockInternalPushService, mockAuditingService, mockLogger)
   }
 
