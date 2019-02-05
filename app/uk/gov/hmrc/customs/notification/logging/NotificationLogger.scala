@@ -42,23 +42,23 @@ plug testing gaps
 raise PR
 */
 
-  // 19 usages
-  def debug(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, None, None))
-  // 1 usages
-  def debug(msg: => String, url: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, Some(url), None))
-  // 1 usages
-  def debug(msg: => String, url: => String, payload: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, Some(url), Some(payload)))
   // 4 usages
+  def debug(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, None, None))
+  // 1 usages only in NotificationLoggerSpec
+  def debug(msg: => String, url: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, Some(url), None))
+  // 1 usages only in NotificationLoggerSpec
+  def debug(msg: => String, url: => String, payload: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, Some(url), Some(payload)))
+  // 1 usages AuditingService.scala
   def debug(msg: => String, headers: => SeqOfHeader): Unit = logger.debug(formatDebug(msg, headers))
-  // 13 usages
+  // 1 usages AuditingService.scala
   def info(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.info(formatInfo(msg))
-  // 24 usages
+  // 2 usages PushClientNotificationRetryService.scala, PushClientNotificationService.scala
   def error(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg))
   // 1 usages
   def error(msg: => String, headers: => SeqOfHeader): Unit = logger.error(formatError(msg, headers))
-  // 1 usages
+  // 1 usages only in NotificationLoggerSpec.scala
   def error(msg: => String, t: => Throwable)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg), t)
-  // 4 usages
+  // 1 usages in NotificationPollingService.scala
   def debugWithoutRequestContext(s: => String): Unit = logger.debug(s)
 
 }
