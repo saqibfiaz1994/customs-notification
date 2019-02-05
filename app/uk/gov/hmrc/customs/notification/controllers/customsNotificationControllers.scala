@@ -98,11 +98,11 @@ abstract class CustomsNotificationController @Inject()(val logger: NotificationL
 
   private def process(xml: NodeSeq)(implicit md: RequestMetaData): Future[Result] = {
     logger.debug(s"Received notification with payload: $xml, metaData: $md")
-// TODO: remove
-implicit val hc = HeaderCarrier()
     callbackDetailsConnector.getClientData(md.clientSubscriptionId.toString()).flatMap {
 
       case Some(apiSubscriptionFields) =>
+// TODO: remove
+implicit val hc = HeaderCarrier()
         handleNotification(xml, md, apiSubscriptionFields).recover{
           case t: Throwable =>
             logger.error(s"Notification processing failed due to: ${t.getMessage}")

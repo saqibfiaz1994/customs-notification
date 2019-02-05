@@ -116,7 +116,7 @@ class CustomsNotificationControllerSpec extends UnitSpec with Matchers with Mock
     }
 
     "respond with 400 when declarant callback data not found by ApiSubscriptionFields service" in {
-      when(mockCallbackDetailsConnector.getClientData(meq(validFieldsId))(any[HeaderCarrier])).thenReturn(Future.successful(None))
+      when(mockCallbackDetailsConnector.getClientData(meq(validFieldsId))).thenReturn(Future.successful(None))
 
       testSubmitResult(ValidRequestWithMixedCaseCorrelationId) { result =>
         status(result) shouldBe BAD_REQUEST
@@ -181,7 +181,7 @@ class CustomsNotificationControllerSpec extends UnitSpec with Matchers with Mock
     }
 
     "respond with 500 when unexpected failure happens" in {
-      when(mockCallbackDetailsConnector.getClientData(meq(validFieldsId))(any[HeaderCarrier]))
+      when(mockCallbackDetailsConnector.getClientData(meq(validFieldsId)))
         .thenReturn(Future.failed(emulatedServiceFailure))
 
 
@@ -214,7 +214,7 @@ class CustomsNotificationControllerSpec extends UnitSpec with Matchers with Mock
   }
 
   private def returnMockedCallbackDetailsForTheClientIdInRequest() = {
-    when(mockCallbackDetailsConnector.getClientData(meq(validFieldsId))(any[HeaderCarrier])).
+    when(mockCallbackDetailsConnector.getClientData(meq(validFieldsId))).
       thenReturn(Future.successful(Some(mockApiSubscriptionFields)))
   }
 

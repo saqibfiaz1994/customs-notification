@@ -32,11 +32,15 @@ Current API is forcing us to create an implicit HeaderCarrier just so that we ca
 class NotificationLogger @Inject()(logger: CdsLogger) {
 
 /*
-TODO: recaclculate usages
-TODO: inline usages with ONE and delete API method
-TODO: delete API method in 2
-TODO: Add traits eg Id(name/value), simple traits
- */
+TODO: recalculate usages
+check logging in connectors
+check references to NotificationLogger (8 and mainly connectors) and remove
+inline funky stuff
+check references for HeaderCarrier
+more tests for new logger
+plug testing gaps
+raise PR
+*/
 
   // 19 usages
   def debug(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, None, None))
