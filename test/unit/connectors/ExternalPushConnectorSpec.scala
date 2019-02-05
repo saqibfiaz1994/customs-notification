@@ -22,12 +22,12 @@ import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.scalatest.mockito.MockitoSugar
 import play.api.libs.json.Writes
 import uk.gov.hmrc.customs.api.common.config.{ServiceConfig, ServiceConfigProvider}
-import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.connectors.ExternalPushConnector
 import uk.gov.hmrc.customs.notification.domain.PushNotificationRequestBody
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
+import unit.logging.StubCdsLogger
 import util.TestData.pushNotificationRequest
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,12 +36,12 @@ import scala.xml.NodeSeq
 class ExternalPushConnectorSpec extends UnitSpec with MockitoSugar {
 
   private val mockHttpClient = mock[HttpClient]
-  private val mockNotificationLogger = mock[CdsLogger]
+  private val stubCdsLogger = StubCdsLogger()
   private val serviceConfigProvider = mock[ServiceConfigProvider]
 
   private val connector = new ExternalPushConnector(
     mockHttpClient,
-    mockNotificationLogger,
+    stubCdsLogger,
     serviceConfigProvider
   )
 

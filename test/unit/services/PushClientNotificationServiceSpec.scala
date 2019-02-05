@@ -23,12 +23,12 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import play.api.test.Helpers.BAD_REQUEST
-import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.connectors.CustomsNotificationMetricsConnector
 import uk.gov.hmrc.customs.notification.domain.{ClientId, CustomsNotificationsMetricsRequest, HasId, HttpResultError}
 import uk.gov.hmrc.customs.notification.services.{DateTimeService, OutboundSwitchService, PushClientNotificationService}
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.test.UnitSpec
+import unit.logging.StubCdsLogger
 import unit.services.ClientWorkerTestData._
 import util.TestData
 import util.TestData.emulatedServiceFailure
@@ -38,14 +38,14 @@ import scala.concurrent.Future
 class PushClientNotificationServiceSpec extends UnitSpec with MockitoSugar with Eventually with BeforeAndAfterEach {
 
   private val mockOutboundSwitchService = mock[OutboundSwitchService]
-  private val mockCdsLogger = mock[CdsLogger]
+  private val stubCdsLogger = StubCdsLogger()
   private val mockCustomsNotificationsMetricsConnector = mock[CustomsNotificationMetricsConnector]
   private val mockDateTimeService = mock[DateTimeService]
   private val mockHttpResponse = mock[HttpResponse]
   private val httpResultError = HttpResultError(BAD_REQUEST, emulatedServiceFailure)
   private implicit val rm = TestData.requestMetaData
 
-  private val pushService = new PushClientNotificationService(mockOutboundSwitchService, mockCdsLogger, mockCustomsNotificationsMetricsConnector, mockDateTimeService)
+  private val pushService = new PushClientNotificationService(mockOutboundSwitchService, stubCdsLogger, mockCustomsNotificationsMetricsConnector, mockDateTimeService)
 
   override protected def beforeEach(): Unit = {
     reset(mockOutboundSwitchService, mockCustomsNotificationsMetricsConnector, mockDateTimeService)

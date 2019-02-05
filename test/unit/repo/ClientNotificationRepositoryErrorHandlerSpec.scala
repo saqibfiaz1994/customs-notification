@@ -18,15 +18,15 @@ package unit.repo
 
 import org.scalatest.mockito.MockitoSugar
 import reactivemongo.api.commands.{DefaultWriteResult, WriteConcernError, WriteError}
-import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.domain.ClientNotification
 import uk.gov.hmrc.customs.notification.repo.ClientNotificationRepositoryErrorHandler
 import uk.gov.hmrc.play.test.UnitSpec
+import unit.logging.StubCdsLogger
 
 class ClientNotificationRepositoryErrorHandlerSpec extends UnitSpec with MockitoSugar {
 
-  private val mockCdsLogger = mock[CdsLogger]
-  private val errorHandler = new ClientNotificationRepositoryErrorHandler(mockCdsLogger)
+  private val stubCdsLogger = StubCdsLogger()
+  private val errorHandler = new ClientNotificationRepositoryErrorHandler(stubCdsLogger)
   private val notification = mock[ClientNotification]
 
   "NotificationRepositoryErrorHandler" can {

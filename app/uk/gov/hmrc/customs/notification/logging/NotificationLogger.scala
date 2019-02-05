@@ -32,16 +32,17 @@ Current API is forcing us to create an implicit HeaderCarrier just so that we ca
 class NotificationLogger @Inject()(logger: CdsLogger) {
 
 /*
-TODO: recalculate usages
-check logging in connectors
-check references to NotificationLogger (8 and mainly connectors) and remove
 TODO: convert errorWithHeaders to accept Header rather than Seq[(String, String)]
 create StubNotificationLogger2
-inline funky stuff
-check references for HeaderCarrier
 more tests for new logger
 plug testing gaps
 raise PR
+TODO DONE
+TODO: recalculate usages
+check logging in connectors
+check references to NotificationLogger (8 and mainly connectors) and remove
+inline funky stuff
+check references for HeaderCarrier
 */
 
   //DONE
