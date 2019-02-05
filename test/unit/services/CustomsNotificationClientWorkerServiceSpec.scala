@@ -25,7 +25,7 @@ import org.scalatest.time.{Millis, Span}
 import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames._
 import uk.gov.hmrc.customs.notification.controllers.RequestMetaData
 import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.{NotificationLogger, NotificationLogger2}
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 import uk.gov.hmrc.customs.notification.repo.ClientNotificationRepo
 import uk.gov.hmrc.customs.notification.services.{CustomsNotificationClientWorkerService, NotificationDispatcher, PullClientNotificationService}
 import uk.gov.hmrc.http.HeaderCarrier

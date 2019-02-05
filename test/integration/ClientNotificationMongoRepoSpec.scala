@@ -28,7 +28,6 @@ import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.JsObjectDocumentWriter
 import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.LockRepository
@@ -47,7 +46,6 @@ class ClientNotificationMongoRepoSpec extends UnitSpec
   with MockitoSugar
   with MongoSpecSupport  { self =>
 
-  private val mockNotificationLogger = mock[NotificationLogger]
   private val mockCdsLogger = mock[CdsLogger]
   private val mockErrorHandler = mock[ClientNotificationRepositoryErrorHandler]
 

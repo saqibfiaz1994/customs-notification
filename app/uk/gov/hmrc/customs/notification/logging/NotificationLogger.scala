@@ -44,11 +44,6 @@ plug testing gaps
 raise PR
 */
 
-  // 1 usages FailedPushEmailPollingService.scala
-  def debug(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, None, None))
-  // 1 usages FailedPushEmailPollingService.scala
-  def info(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.info(formatInfo(msg))
-
   //DONE
   // 1 usages only in NotificationLoggerSpec
   def debug(msg: => String, url: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, Some(url), None))
@@ -64,6 +59,11 @@ raise PR
   def error(msg: => String, t: => Throwable)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg), t)
   // 1 in test
   def debug(msg: => String, headers: => SeqOfHeader): Unit = logger.debug(formatDebug(msg, headers))
+  // 1 usages only in tests
+  def debug(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, None, None))
+  // 1 usages FailedPushEmailPollingService.scala
+  def info(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.info(formatInfo(msg))
+
 
 }
 
