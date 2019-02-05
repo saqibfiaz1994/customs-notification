@@ -24,7 +24,6 @@ import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames._
 import uk.gov.hmrc.customs.notification.controllers.RequestMetaData
 import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.services.PushNotificationRequestService
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import util.TestData._
 
@@ -35,7 +34,6 @@ class PushNotificationRequestServiceSpec extends UnitSpec with MockitoSugar {
   private val service = new PushNotificationRequestService(mockApiSubscriptionFieldsConnector)
   val testDate: ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC"))
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
   val metaData = RequestMetaData(clientSubscriptionId, conversationId, Some(BadgeId(badgeId)), Some(Eori(eoriNumber)), None, testDate)
 
   "PushNotificationRequestService" should {

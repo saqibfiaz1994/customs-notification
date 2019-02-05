@@ -88,8 +88,6 @@ class ClientWorkerImplTimerSpec extends UnitSpec with MockitoSugar with Eventual
       clientWorker
     }
 
-    private[ClientWorkerImplTimerSpec] implicit val implicitHc = HeaderCarrier()
-
     def eqLockOwnerId(id: LockOwnerId): LockOwnerId = ameq[String](id.id).asInstanceOf[LockOwnerId]
     def eqClientSubscriptionId(id: ClientSubscriptionId): ClientSubscriptionId = ameq[UUID](id.id).asInstanceOf[ClientSubscriptionId]
 

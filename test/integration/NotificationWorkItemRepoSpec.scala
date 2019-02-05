@@ -26,7 +26,6 @@ import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.repo.{MongoDbProvider, NotificationWorkItemMongoRepo}
 import uk.gov.hmrc.customs.notification.util.DateTimeHelpers.ClockJodaExtensions
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.workitem._
@@ -44,7 +43,6 @@ class NotificationWorkItemRepoSpec extends UnitSpec
 
   private val mockLogger = mock[CdsLogger]
   private val clock = Clock.systemUTC()
-  private lazy implicit val emptyHC: HeaderCarrier = HeaderCarrier()
   private val five = 5
 
   private val pushConfig = PushNotificationConfig(

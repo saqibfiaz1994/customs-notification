@@ -29,7 +29,6 @@ import reactivemongo.play.json.JsObjectDocumentWriter
 import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.repo._
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.LockRepository
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.play.test.UnitSpec
@@ -49,7 +48,6 @@ class ClientNotificationMongoRepoSpec extends UnitSpec
   private val mockCdsLogger = mock[CdsLogger]
   private val mockErrorHandler = mock[ClientNotificationRepositoryErrorHandler]
 
-  private lazy implicit val emptyHC: HeaderCarrier = HeaderCarrier()
   private val timeoutInSeconds = 2
   private val duration = org.joda.time.Duration.standardSeconds(timeoutInSeconds)
   private val five = 5

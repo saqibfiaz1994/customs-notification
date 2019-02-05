@@ -29,7 +29,7 @@ import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 import uk.gov.hmrc.customs.notification.services.config.ConfigService
 import uk.gov.hmrc.customs.notification.services.{DateTimeService, OutboundSwitchService, PushClientNotificationRetryService, RetryService}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.test.UnitSpec
 import util.MockitoPassByNameHelper.PassByNameVerifier
 import util.TestData._
@@ -47,7 +47,6 @@ class PushClientNotificationRetryServiceSpec extends UnitSpec with MockitoSugar 
   private val mockDateTimeService = mock[DateTimeService]
   private val mockHttpResponse = mock[HttpResponse]
   private val httpResultError = HttpResultError(BAD_REQUEST, emulatedServiceFailure)
-  private implicit val hc = HeaderCarrier()
   private val mockConfigService = mock[ConfigService]
   private val mockPushNotificationConfig = mock[PushNotificationConfig]
   implicit private val implicitConversationId = conversationId

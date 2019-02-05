@@ -22,12 +22,10 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Span}
-import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames._
 import uk.gov.hmrc.customs.notification.domain.HasId
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 import uk.gov.hmrc.customs.notification.repo.NotificationWorkItemRepo
 import uk.gov.hmrc.customs.notification.services._
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.workitem.{Failed, PermanentlyFailed, Succeeded}
 import util.MockitoPassByNameHelper.PassByNameVerifier
@@ -42,13 +40,6 @@ class CustomsNotificationRetryServiceSpec extends UnitSpec with MockitoSugar wit
     super.patienceConfig.copy(timeout = Span(defaultTimeout.toMillis, Millis))
 
   private val badgeIdValue = "test-badge-id"
-  private implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = Seq(
-    X_CONVERSATION_ID_HEADER_NAME -> validConversationId,
-    X_BADGE_ID_HEADER_NAME -> badgeIdValue,
-    X_EORI_ID_HEADER_NAME -> eoriNumber,
-    X_CDS_CLIENT_ID_HEADER_NAME -> validFieldsId,
-    X_CORRELATION_ID_HEADER_NAME -> correlationId))
-
 
   val ValidXML: Elem = <foo1></foo1>
   private val mockNotificationLogger = mock[NotificationLogger2]
