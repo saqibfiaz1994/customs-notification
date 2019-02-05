@@ -24,7 +24,7 @@ import uk.gov.hmrc.customs.notification.connectors.CustomsNotificationMetricsCon
 import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.logging.LoggingHelper.logMsgPrefix
 import uk.gov.hmrc.customs.notification.util.DateTimeHelpers._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.HttpResponse
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -36,9 +36,6 @@ class PushClientNotificationService @Inject() (outboundSwitchService: OutboundSw
                                                metricsConnector: CustomsNotificationMetricsConnector,
                                                dateTimeService: DateTimeService) {
 
-  //TODO remove this after log refactoring
-  private implicit val hc = HeaderCarrier()
-
   def send(apiSubscriptionFields: ApiSubscriptionFields, clientNotification: ClientNotification): Boolean = {
 
     val pushNotificationRequest = pushNotificationRequestFrom(apiSubscriptionFields.fields, clientNotification)
@@ -48,7 +45,7 @@ class PushClientNotificationService @Inject() (outboundSwitchService: OutboundSw
         "NOTIFICATION", clientNotification.notification.conversationId, startTime.toZonedDateTime, dateTimeService.zonedDateTimeUtc))
     }
 
-    implicit val loggingContext = new HasId {
+    implicit val loggingContext: HasId = new HasId {
       override def idName: String = "conversationId"
       override def idValue: String = clientNotification.notification.conversationId.toString
     }

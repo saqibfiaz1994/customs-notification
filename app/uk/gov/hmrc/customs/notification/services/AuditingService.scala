@@ -22,7 +22,6 @@ import play.api.libs.json.{JsObject, JsString, JsValue}
 import uk.gov.hmrc.customs.api.common.config.ServicesConfig
 import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.EventKeys.TransactionName
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
@@ -54,8 +53,6 @@ class AuditingService @Inject()(logger: NotificationLogger2, servicesConfig: Ser
   }
 
   private def auditNotification(pnr: PushNotificationRequest, successOrFailure: String, failureReason: Option[String])(implicit rm: HasId): Unit = {
-
-    implicit val carrier = HeaderCarrier()
 
     val tags = Map(TransactionName -> transactionNameValue,
     xConversationId -> pnr.body.conversationId )

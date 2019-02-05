@@ -29,7 +29,6 @@ import uk.gov.hmrc.customs.notification.connectors.ApiSubscriptionFieldsConnecto
 import uk.gov.hmrc.customs.notification.domain.{ApiSubscriptionFields, ClientNotification, ClientSubscriptionId, CustomsNotificationConfig}
 import uk.gov.hmrc.customs.notification.logging.LoggingHelper.logMsgPrefix
 import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockOwnerId, LockRepo}
-import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.collection.immutable.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -80,8 +79,6 @@ class ClientWorkerImpl @Inject()(
   private val pullExcludeEnabled = configService.pullExcludeConfig.pullExcludeEnabled
 
   override def processNotificationsFor(csid: ClientSubscriptionId, lockOwnerId: LockOwnerId, lockDuration: Duration): Future[Unit] = {
-    //implicit HeaderCarrier required for ApiSubscriptionFieldsConnector
-    //however looking at api-subscription-fields service I do not think it is required so keep new HeaderCarrier() for now
     implicit val refreshLockFailed: AtomicBoolean = new AtomicBoolean(false)
     val refreshDuration = ninetyPercentOf(lockDuration)
     val timer = actorSystem.scheduler.schedule(initialDelay = refreshDuration, interval = refreshDuration, new Runnable {
@@ -238,8 +235,6 @@ class ClientWorkerImpl @Inject()(
   }
 
   private def blockingMaybeDeclarantDetails(cn: ClientNotification): Option[ApiSubscriptionFields] = {
-//TODO: remove
-implicit val hc = HeaderCarrier()
     try {
       scala.concurrent.blocking {
         Await.result(callbackDetailsConnector.getClientData(cn.csid.id.toString), awaitApiCallDuration)
