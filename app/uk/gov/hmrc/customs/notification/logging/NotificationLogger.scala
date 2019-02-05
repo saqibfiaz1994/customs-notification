@@ -36,6 +36,7 @@ TODO: recalculate usages
 check logging in connectors
 check references to NotificationLogger (8 and mainly connectors) and remove
 TODO: convert errorWithHeaders to accept Header rather than Seq[(String, String)]
+create StubNotificationLogger2
 inline funky stuff
 check references for HeaderCarrier
 more tests for new logger
@@ -53,7 +54,7 @@ raise PR
   def error(msg: => String, t: => Throwable)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg), t)
   // 1 usages PushClientNotificationRetryService.scala
   def error(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg))
-  // 1 usages in NotificationPollingService.scala, CustomsNotificationBlockedService.scala
+  // 1 usages in NotificationPollingService.scala
   def debugWithoutRequestContext(s: => String): Unit = logger.debug(s)
 
   //DONE

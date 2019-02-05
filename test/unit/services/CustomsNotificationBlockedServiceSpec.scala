@@ -24,7 +24,6 @@ import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.repo.NotificationWorkItemRepo
 import uk.gov.hmrc.customs.notification.services.CustomsNotificationBlockedService
 import uk.gov.hmrc.play.test.UnitSpec
-import unit.logging.StubNotificationLogger
 import util.TestData._
 
 import scala.concurrent.Future
@@ -34,7 +33,7 @@ class CustomsNotificationBlockedServiceSpec extends UnitSpec
   with Eventually
   with BeforeAndAfterEach {
 
-  private val notificationLogger = new StubNotificationLogger(mock[CdsLogger])
+  private val notificationLogger = mock[CdsLogger]
   private val mockRepo = mock[NotificationWorkItemRepo]
   private val service = new CustomsNotificationBlockedService(notificationLogger, mockRepo)
 
