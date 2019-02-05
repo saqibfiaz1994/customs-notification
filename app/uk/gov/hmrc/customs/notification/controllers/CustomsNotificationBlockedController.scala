@@ -22,8 +22,8 @@ import play.api.mvc.{Action, AnyContent, Result}
 import uk.gov.hmrc.customs.api.common.controllers.ErrorResponse.ErrorInternalServerError
 import uk.gov.hmrc.customs.notification.controllers.CustomErrorResponses.ErrorClientIdMissing
 import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames.X_CLIENT_ID_HEADER_NAME
-import uk.gov.hmrc.customs.notification.domain.ClientId
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
+import uk.gov.hmrc.customs.notification.domain.{ClientId, HasId}
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 import uk.gov.hmrc.customs.notification.services.CustomsNotificationBlockedService
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -31,23 +31,28 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class CustomsNotificationBlockedController @Inject()(val logger: NotificationLogger,
+class CustomsNotificationBlockedController @Inject()(val logger: NotificationLogger2,
                                                      val customsNotificationBlockedService: CustomsNotificationBlockedService)
   extends BaseController {
 
   def blockedCount(): Action[AnyContent] = Action.async {
     implicit request =>
       request.headers.get(X_CLIENT_ID_HEADER_NAME).fold {
-        logger.error(s"missing $X_CLIENT_ID_HEADER_NAME header")
+        //TODO: convert errorWithHeaders to accept Header rather than Seq[(String, String)]
+        logger.errorWithHeaders(s"missing $X_CLIENT_ID_HEADER_NAME header", request.headers.headers)
         Future.successful(ErrorClientIdMissing.XmlResult)
       } { clientId =>
-        logger.debug(s"getting blocked count for clientId $clientId")
+        implicit val loggingContext = new HasId {
+          override def idName: String = "clientId"
+          override def idValue: String = clientId
+        }
+        logger.debug(s"getting blocked count")
         customsNotificationBlockedService.blockedCount(ClientId(clientId)).map { count =>
-          logger.info(s"blocked count of $count returned for clientId $clientId")
+          logger.info(s"blocked count of $count returned")
           response(count)
         }.recover {
           case t: Throwable =>
-            logger.error(s"unable to get blocked count for clientId $clientId due to ${t.getMessage}")
+            logger.error(s"unable to get blocked count due to ${t.getMessage}")
             ErrorInternalServerError.XmlResult
         }
       }

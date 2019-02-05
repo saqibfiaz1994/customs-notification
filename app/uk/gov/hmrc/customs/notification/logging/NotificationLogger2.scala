@@ -44,7 +44,7 @@ class NotificationLogger2 @Inject()(logger: CdsLogger) {
     logger.debug(formatDebug(msg, Some(url), Some(payload)))
   }
 
-  @deprecated //TODO: inline headers processsing
+  @deprecated //TODO: inline headers processing
   def debugWithHeaders(msg: => String, headers: => SeqOfHeader): Unit = logger.debug(formatWithHeaders(msg, headers))
 
 //  def debug(msg: => String, rm: RequestMetaData): Unit = logger.debug(formatDebug(msg, rm))
