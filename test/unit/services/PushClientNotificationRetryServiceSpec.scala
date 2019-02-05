@@ -24,7 +24,6 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import play.api.test.Helpers.BAD_REQUEST
-import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.connectors.CustomsNotificationMetricsConnector
 import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
@@ -41,7 +40,7 @@ import scala.language.postfixOps
 
 class PushClientNotificationRetryServiceSpec extends UnitSpec with MockitoSugar with Eventually with BeforeAndAfterEach {
 
-  private val mockCdsLogger = mock[CdsLogger]
+  private val mockLogger = mock[NotificationLogger2]
   private val mockOutboundSwitchService = mock[OutboundSwitchService]
   private val notificationLogger = mock[NotificationLogger2]
   private val mockCustomsNotificationsMetricsConnector = mock[CustomsNotificationMetricsConnector]
@@ -52,7 +51,7 @@ class PushClientNotificationRetryServiceSpec extends UnitSpec with MockitoSugar 
   private val mockConfigService = mock[ConfigService]
   private val mockPushNotificationConfig = mock[PushNotificationConfig]
   implicit private val implicitConversationId = conversationId
-  private val retryService = new RetryService(mockConfigService, mockCdsLogger, ActorSystem("PushClientNotificationRetryServiceSpec"))
+  private val retryService = new RetryService(mockConfigService, mockLogger, ActorSystem("PushClientNotificationRetryServiceSpec"))
   private val pushService = new PushClientNotificationRetryService(retryService, mockOutboundSwitchService,
     notificationLogger, mockCustomsNotificationsMetricsConnector, mockDateTimeService)
   private implicit val implicitRequestMetaData = requestMetaData

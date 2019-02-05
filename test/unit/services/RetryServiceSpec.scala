@@ -20,8 +20,8 @@ import akka.actor.ActorSystem
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import play.api.test.Helpers._
-import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.domain.{HttpResultError, PushNotificationConfig, ResultError}
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 import uk.gov.hmrc.customs.notification.services.config.ConfigService
 import uk.gov.hmrc.customs.notification.services.{OutboundSwitchService, RetryService}
 import uk.gov.hmrc.http.HttpResponse
@@ -37,7 +37,7 @@ import scala.language.postfixOps
 class RetryServiceSpec extends UnitSpec with MockitoSugar  {
 
   trait SetUp {
-    val mockCdsLogger = mock[CdsLogger]
+    val mockLogger = mock[NotificationLogger2]
     val exception = new IllegalStateException("BOOM!")
     val mockHttpResponse = mock[HttpResponse]
     val clientId = ClientIdOne
@@ -56,8 +56,8 @@ class RetryServiceSpec extends UnitSpec with MockitoSugar  {
     val eventuallyFailedWith5XX = Future.successful(Left(httpErrorResult5XX))
     val mockConfigService = mock[ConfigService]
     val mockPushNotificationConfig = mock[PushNotificationConfig]
-    val retryService = new RetryService(mockConfigService, mockCdsLogger, ActorSystem("RetryServiceSpec"))
-    implicit val implicitConversationId = conversationId
+    val retryService = new RetryService(mockConfigService, mockLogger, ActorSystem("RetryServiceSpec"))
+    implicit val rm = requestMetaData
 
     when(mockConfigService.pushNotificationConfig).thenReturn(mockPushNotificationConfig)
     when(mockPushNotificationConfig.retryDelay).thenReturn(500 milliseconds)

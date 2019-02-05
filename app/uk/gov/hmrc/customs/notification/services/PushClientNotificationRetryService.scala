@@ -34,8 +34,6 @@ class PushClientNotificationRetryService @Inject()(retryService: RetryService,
 
   def send(apiSubscriptionFields: ApiSubscriptionFields, notificationWorkItem: NotificationWorkItem)(implicit hasId: HasId): Future[Boolean] = {
     val pushNotificationRequest = pushNotificationRequestFrom(apiSubscriptionFields.fields, notificationWorkItem)
-    //TODO: remove - data is for logging
-    implicit val implicitConversationId = notificationWorkItem.notification.conversationId
 
     notificationWorkItem.metricsStartDateTime.fold() { startTime =>
       metricsConnector.post(CustomsNotificationsMetricsRequest(
