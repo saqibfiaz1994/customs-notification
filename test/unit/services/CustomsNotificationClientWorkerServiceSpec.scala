@@ -40,7 +40,7 @@ class CustomsNotificationClientWorkerServiceSpec extends UnitSpec with MockitoSu
     super.patienceConfig.copy(timeout = Span(defaultTimeout.toMillis, Millis))
 
   private val badgeIdValue = "test-badge-id"
-  private implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = Seq(
+  private val hc: HeaderCarrier = HeaderCarrier(extraHeaders = Seq(
     X_CONVERSATION_ID_HEADER_NAME -> validConversationId,
     X_BADGE_ID_HEADER_NAME -> badgeIdValue,
     X_EORI_ID_HEADER_NAME -> eoriNumber,

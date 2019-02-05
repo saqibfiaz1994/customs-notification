@@ -32,15 +32,12 @@ import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
 import uk.gov.hmrc.customs.notification.services.config.ConfigService
 import uk.gov.hmrc.customs.notification.services.{CustomsNotificationClientWorkerService, DateTimeService}
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import util.TestData._
 
 import scala.concurrent.Future
 
 class CustomsNotificationControllerSpec extends UnitSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
-
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val mockNotificationLogger = mock[NotificationLogger2]
   private val mockCustomsNotificationService = mock[CustomsNotificationClientWorkerService]

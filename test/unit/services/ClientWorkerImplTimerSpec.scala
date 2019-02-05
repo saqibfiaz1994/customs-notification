@@ -30,7 +30,6 @@ import uk.gov.hmrc.customs.notification.connectors.ApiSubscriptionFieldsConnecto
 import uk.gov.hmrc.customs.notification.domain.{ClientNotification, ClientSubscriptionId, CustomsNotificationConfig, PullExcludeConfig}
 import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, LockOwnerId, LockRepo}
 import uk.gov.hmrc.customs.notification.services.{ClientWorkerImpl, PullClientNotificationService, PushClientNotificationService}
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import unit.services.ClientWorkerTestData._
 import util.MockitoPassByNameHelper.PassByNameVerifier
