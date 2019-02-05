@@ -19,10 +19,10 @@ package uk.gov.hmrc.customs.notification.services
 import java.util.concurrent.TimeUnit
 
 import javax.inject.{Inject, Singleton}
+import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 import uk.gov.hmrc.customs.notification.connectors.CustomsNotificationMetricsConnector
 import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.logging.LoggingHelper.logMsgPrefix
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.util.DateTimeHelpers._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
@@ -32,7 +32,7 @@ import scala.concurrent.duration.Duration
 
 @Singleton
 class PushClientNotificationService @Inject() (outboundSwitchService: OutboundSwitchService,
-                                               notificationLogger: NotificationLogger,
+                                               logger: CdsLogger,
                                                metricsConnector: CustomsNotificationMetricsConnector,
                                                dateTimeService: DateTimeService) {
 
@@ -53,10 +53,10 @@ class PushClientNotificationService @Inject() (outboundSwitchService: OutboundSw
     }
     either match {
       case Right(_) =>
-        notificationLogger.debug(s"${logMsgPrefix(clientNotification)} Notification has been pushed")
+        logger.debug(s"${logMsgPrefix(clientNotification)} Notification has been pushed")
         true
       case Left(_) =>
-        notificationLogger.error(s"${logMsgPrefix(clientNotification)} Notification push failed")
+        logger.error(s"${logMsgPrefix(clientNotification)} Notification push failed")
         false
     }
 

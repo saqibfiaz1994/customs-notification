@@ -29,7 +29,6 @@ import uk.gov.hmrc.customs.notification.domain.{ClientId, CustomsNotificationsMe
 import uk.gov.hmrc.customs.notification.services.{DateTimeService, OutboundSwitchService, PushClientNotificationService}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.test.UnitSpec
-import unit.logging.StubNotificationLogger
 import unit.services.ClientWorkerTestData._
 import util.TestData.emulatedServiceFailure
 
@@ -38,14 +37,14 @@ import scala.concurrent.Future
 class PushClientNotificationServiceSpec extends UnitSpec with MockitoSugar with Eventually with BeforeAndAfterEach {
 
   private val mockOutboundSwitchService = mock[OutboundSwitchService]
-  private val notificationLogger = new StubNotificationLogger(mock[CdsLogger])
+  private val mockCdsLogger = mock[CdsLogger]
   private val mockCustomsNotificationsMetricsConnector = mock[CustomsNotificationMetricsConnector]
   private val mockDateTimeService = mock[DateTimeService]
   private val mockHttpResponse = mock[HttpResponse]
   private val httpResultError = HttpResultError(BAD_REQUEST, emulatedServiceFailure)
   private implicit val hc = HeaderCarrier()
 
-  private val pushService = new PushClientNotificationService(mockOutboundSwitchService, notificationLogger, mockCustomsNotificationsMetricsConnector, mockDateTimeService)
+  private val pushService = new PushClientNotificationService(mockOutboundSwitchService, mockCdsLogger, mockCustomsNotificationsMetricsConnector, mockDateTimeService)
 
   override protected def beforeEach(): Unit = {
     reset(mockOutboundSwitchService, mockCustomsNotificationsMetricsConnector, mockDateTimeService)
