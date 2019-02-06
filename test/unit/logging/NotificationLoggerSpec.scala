@@ -27,7 +27,7 @@ import util.MockitoPassByNameHelper.PassByNameVerifier
 import util.RequestHeaders._
 import util.TestData.requestMetaData
 
-class NotificationLoggerSpec2 extends UnitSpec with MockitoSugar {
+class NotificationLoggerSpec extends UnitSpec with MockitoSugar {
 
   trait SetUp {
     val mockCdsLogger: CdsLogger = mock[CdsLogger]
@@ -93,13 +93,6 @@ class NotificationLoggerSpec2 extends UnitSpec with MockitoSugar {
       PassByNameVerifier(mockCdsLogger, "error")
         .withByNameParam("[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] msg")
         .withByNameParamMatcher[Throwable](any[Throwable])
-        .verify()
-    }
-    "debugWithoutRequestContext(s: => String)" in new SetUp {
-      logger.debugWithoutRequestContext("msg")
-
-      PassByNameVerifier(mockCdsLogger, "debug")
-        .withByNameParam("msg")
         .verify()
     }
   }

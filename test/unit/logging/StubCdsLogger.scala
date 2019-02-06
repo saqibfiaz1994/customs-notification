@@ -16,27 +16,24 @@
 
 package unit.logging
 
-import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.customs.api.common.config.ServicesConfig
 import uk.gov.hmrc.customs.api.common.logging.CdsLogger
-
-private object MockitoSugarHelper extends MockitoSugar
 
 case class StubCdsLogger() extends CdsLogger(MockitoSugarHelper.mock[ServicesConfig]) {
 
   override def debug(msg: =>String): Unit = println(msg)
 
-  override def debug(msg: =>String, e: =>Throwable): Unit = println(msg)
+  override def debug(msg: =>String, e: =>Throwable): Unit = println(msg + e.toString)
 
   override def info(msg: =>String): Unit = println(msg)
 
-  override def info(msg: =>String, e: =>Throwable): Unit = println(msg)
+  override def info(msg: =>String, e: =>Throwable): Unit = println(msg + e.toString)
 
   override def warn(msg: =>String): Unit = println(msg)
 
-  override def warn(msg: =>String, e: =>Throwable): Unit = println(msg)
+  override def warn(msg: =>String, e: =>Throwable): Unit = println(msg+e.toString)
 
   override def error(msg: =>String): Unit = println(msg)
 
-  override def error(msg: =>String, e: =>Throwable): Unit = println(msg)
+  override def error(msg: =>String, e: =>Throwable): Unit = println(msg+e.toString)
 }
