@@ -21,7 +21,7 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import play.api.test.Helpers._
 import uk.gov.hmrc.customs.notification.domain.{HttpResultError, PushNotificationConfig, ResultError}
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.services.config.ConfigService
 import uk.gov.hmrc.customs.notification.services.{OutboundSwitchService, RetryService}
 import uk.gov.hmrc.http.HttpResponse
@@ -37,7 +37,7 @@ import scala.language.postfixOps
 class RetryServiceSpec extends UnitSpec with MockitoSugar  {
 
   trait SetUp {
-    val mockLogger = mock[NotificationLogger2]
+    val mockLogger = mock[NotificationLogger]
     val exception = new IllegalStateException("BOOM!")
     val mockHttpResponse = mock[HttpResponse]
     val clientId = ClientIdOne

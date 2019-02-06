@@ -17,11 +17,11 @@
 package unit.logging
 
 import uk.gov.hmrc.customs.api.common.logging.CdsLogger
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger
+import uk.gov.hmrc.customs.notification.logging.NotificationLoggerOld
 import uk.gov.hmrc.customs.notification.model.SeqOfHeader
 import uk.gov.hmrc.http.HeaderCarrier
 
-class StubNotificationLogger(logger: CdsLogger) extends NotificationLogger(logger) {
+class StubNotificationLoggerOld(logger: CdsLogger) extends NotificationLoggerOld(logger) {
 
   override def debug(msg: => String)(implicit hc: HeaderCarrier): Unit =
     println(msg)

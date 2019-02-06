@@ -26,7 +26,7 @@ import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.customs.api.common.controllers.ErrorResponse.{ErrorInternalServerError, errorBadRequest}
 import uk.gov.hmrc.customs.notification.controllers.CustomsNotificationBlockedController
 import uk.gov.hmrc.customs.notification.domain.HasId
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.model.SeqOfHeader
 import uk.gov.hmrc.customs.notification.services.CustomsNotificationBlockedService
 import uk.gov.hmrc.play.test.UnitSpec
@@ -41,7 +41,7 @@ class CustomsNotificationBlockedControllerSpec
     with BeforeAndAfterEach {
 
   private val mockService = mock[CustomsNotificationBlockedService]
-  private val mockLogger = mock[NotificationLogger2]
+  private val mockLogger = mock[NotificationLogger]
   private val controller = new CustomsNotificationBlockedController(mockLogger, mockService)
 
   override protected def beforeEach() {

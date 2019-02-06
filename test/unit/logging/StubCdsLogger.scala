@@ -16,11 +16,13 @@
 
 package unit.logging
 
+import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.customs.api.common.config.ServicesConfig
 import uk.gov.hmrc.customs.api.common.logging.CdsLogger
 
+private object MockitoSugarHelper extends MockitoSugar
 
-
-case class StubCdsLogger() extends CdsLogger(serviceConfig = null) {
+case class StubCdsLogger() extends CdsLogger(MockitoSugarHelper.mock[ServicesConfig]) {
 
   override def debug(msg: =>String): Unit = println(msg)
 

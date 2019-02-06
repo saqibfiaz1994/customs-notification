@@ -19,7 +19,7 @@ package uk.gov.hmrc.customs.notification.services
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.customs.notification.connectors._
 import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.services.config.ConfigService
 import uk.gov.hmrc.http.HttpResponse
 
@@ -31,7 +31,7 @@ class OutboundSwitchService @Inject()(configService: ConfigService,
                                       externalPush: ExternalPushConnector,
                                       internalPush: InternalPushConnector,
                                       auditingService: AuditingService,
-                                      logger: NotificationLogger2
+                                      logger: NotificationLogger
                                      ) {
 
   def send(clientId: ClientId, pnr: PushNotificationRequest)(implicit rm: HasId): Future[Either[ResultError, HttpResponse]] = {

@@ -26,7 +26,7 @@ import uk.gov.hmrc.customs.notification.connectors.ApiSubscriptionFieldsConnecto
 import uk.gov.hmrc.customs.notification.controllers.CustomErrorResponses.ErrorCdsClientIdNotFound
 import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames._
 import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.services.{CustomsNotificationClientWorkerService, CustomsNotificationRetryService, CustomsNotificationService, DateTimeService}
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -60,14 +60,14 @@ case class RequestMetaData(clientSubscriptionId: ClientSubscriptionId,
   override def idValue: String = conversationId.toString
 }
 
-abstract class CustomsNotificationController @Inject()(val logger: NotificationLogger2,
+abstract class CustomsNotificationController @Inject()(val logger: NotificationLogger,
                                                        val customsNotificationService: CustomsNotificationService,
                                                        val callbackDetailsConnector: ApiSubscriptionFieldsConnector,
                                                        val configService: CustomsNotificationConfig,
                                                        val dateTimeService: DateTimeService)
                extends BaseController with HeaderValidator {
 
-  override val notificationLogger: NotificationLogger2 = logger
+  override val notificationLogger: NotificationLogger = logger
   private lazy val maybeBasicAuthToken: Option[String] = configService.maybeBasicAuthToken
   private lazy val xmlValidationErrorMessage = "Request body does not contain well-formed XML."
 
@@ -128,7 +128,7 @@ abstract class CustomsNotificationController @Inject()(val logger: NotificationL
 }
 
 @Singleton
-class CustomsNotificationClientWorkerController @Inject()(logger: NotificationLogger2,
+class CustomsNotificationClientWorkerController @Inject()(logger: NotificationLogger,
                                                           customsNotificationService: CustomsNotificationClientWorkerService,
                                                           callbackDetailsConnector: ApiSubscriptionFieldsConnector,
                                                           configService: CustomsNotificationConfig,
@@ -142,7 +142,7 @@ class CustomsNotificationClientWorkerController @Inject()(logger: NotificationLo
 }
 
 @Singleton
-class CustomsNotificationRetryController @Inject()(logger: NotificationLogger2,
+class CustomsNotificationRetryController @Inject()(logger: NotificationLogger,
                                                    customsNotificationService: CustomsNotificationRetryService,
                                                    callbackDetailsConnector: ApiSubscriptionFieldsConnector,
                                                    configService: CustomsNotificationConfig,

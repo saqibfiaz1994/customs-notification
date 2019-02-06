@@ -24,7 +24,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.customs.api.common.config.ServicesConfig
 import uk.gov.hmrc.customs.notification.domain.HasId
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.services.AuditingService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
@@ -43,7 +43,7 @@ class AuditingServiceSpec extends UnitSpec with MockitoSugar with BeforeAndAfter
 
   override implicit val patienceConfig = PatienceConfig(timeout = 5 seconds)
 
-  private val mockLogger = mock[NotificationLogger2]
+  private val mockLogger = mock[NotificationLogger]
   private val mockServicesConfig = mock[ServicesConfig]
   private val mockAuditConnector = mock[AuditConnector]
   private implicit val rm = TestData.requestMetaData

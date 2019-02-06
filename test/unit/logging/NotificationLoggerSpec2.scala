@@ -19,7 +19,7 @@ package unit.logging
 import org.mockito.ArgumentMatchers.any
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.customs.api.common.logging.CdsLogger
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.RequestChain
 import uk.gov.hmrc.play.test.UnitSpec
@@ -31,7 +31,7 @@ class NotificationLoggerSpec2 extends UnitSpec with MockitoSugar {
 
   trait SetUp {
     val mockCdsLogger: CdsLogger = mock[CdsLogger]
-    val logger = new NotificationLogger2(mockCdsLogger)
+    val logger = new NotificationLogger(mockCdsLogger)
     implicit val hc = HeaderCarrier(extraHeaders = Seq(X_CDS_CLIENT_ID_HEADER, X_CONVERSATION_ID_HEADER), requestChain = RequestChain("rc"))
   }
 

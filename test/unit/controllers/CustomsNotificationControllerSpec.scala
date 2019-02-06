@@ -29,7 +29,7 @@ import uk.gov.hmrc.customs.api.common.controllers.ErrorResponse.{UnauthorizedCod
 import uk.gov.hmrc.customs.notification.connectors.ApiSubscriptionFieldsConnector
 import uk.gov.hmrc.customs.notification.controllers.{CustomsNotificationClientWorkerController, RequestMetaData}
 import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.services.config.ConfigService
 import uk.gov.hmrc.customs.notification.services.{CustomsNotificationClientWorkerService, DateTimeService}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -39,7 +39,7 @@ import scala.concurrent.Future
 
 class CustomsNotificationControllerSpec extends UnitSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
 
-  private val mockNotificationLogger = mock[NotificationLogger2]
+  private val mockNotificationLogger = mock[NotificationLogger]
   private val mockCustomsNotificationService = mock[CustomsNotificationClientWorkerService]
   private val mockConfigService = mock[ConfigService]
   private val mockCallbackDetailsConnector = mock[ApiSubscriptionFieldsConnector]

@@ -20,7 +20,7 @@ import akka.actor.{ActorSystem, Scheduler}
 import akka.pattern.after
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.customs.notification.domain.{HasId, ResultError}
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.services.config.ConfigService
 import uk.gov.hmrc.http.HttpResponse
 
@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 // idea for retry taken from from https://gist.github.com/viktorklang/9414163
 @Singleton
-class RetryService @Inject()(configService: ConfigService, logger: NotificationLogger2, actorSystem: ActorSystem) {
+class RetryService @Inject()(configService: ConfigService, logger: NotificationLogger, actorSystem: ActorSystem) {
 
   def retry(f: => Future[Either[ResultError, HttpResponse]])
            (implicit rm: HasId, ec: ExecutionContext): Future[Either[ResultError, HttpResponse]] = {

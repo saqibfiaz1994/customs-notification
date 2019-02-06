@@ -23,7 +23,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Span}
 import uk.gov.hmrc.customs.notification.domain.HasId
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo.NotificationWorkItemRepo
 import uk.gov.hmrc.customs.notification.services._
 import uk.gov.hmrc.play.test.UnitSpec
@@ -42,7 +42,7 @@ class CustomsNotificationRetryServiceSpec extends UnitSpec with MockitoSugar wit
   private val badgeIdValue = "test-badge-id"
 
   val ValidXML: Elem = <foo1></foo1>
-  private val mockNotificationLogger = mock[NotificationLogger2]
+  private val mockNotificationLogger = mock[NotificationLogger]
   private val mockNotificationWorkItemRepo = mock[NotificationWorkItemRepo]
   private val mockPushService = mock[PushClientNotificationRetryService]
   private val mockPullService = mock[PullClientNotificationRetryService]

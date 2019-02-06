@@ -20,7 +20,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.http.MimeTypes
 import uk.gov.hmrc.customs.notification.controllers.RequestMetaData
 import uk.gov.hmrc.customs.notification.domain.{HasId, _}
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo.{ClientNotificationRepo, NotificationWorkItemRepo}
 import uk.gov.hmrc.customs.notification.util.DateTimeHelpers._
 import uk.gov.hmrc.workitem.{Failed, PermanentlyFailed, Succeeded}
@@ -37,7 +37,7 @@ trait CustomsNotificationService {
 }
 
 @Singleton
-class CustomsNotificationClientWorkerService @Inject()(logger: NotificationLogger2,
+class CustomsNotificationClientWorkerService @Inject()(logger: NotificationLogger,
                                                        clientNotificationRepo: ClientNotificationRepo,
                                                        notificationDispatcher: NotificationDispatcher,
                                                        pullClientNotificationService: PullClientNotificationService)
@@ -69,7 +69,7 @@ class CustomsNotificationClientWorkerService @Inject()(logger: NotificationLogge
 }
 
 @Singleton
-class CustomsNotificationRetryService @Inject()(logger: NotificationLogger2,
+class CustomsNotificationRetryService @Inject()(logger: NotificationLogger,
                                                 notificationWorkItemRepo: NotificationWorkItemRepo,
                                                 pushClientNotificationRetryService: PushClientNotificationRetryService,
                                                 pullClientNotificationRetryService: PullClientNotificationRetryService)

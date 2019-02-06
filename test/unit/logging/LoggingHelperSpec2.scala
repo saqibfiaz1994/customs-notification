@@ -16,7 +16,7 @@
 
 package unit.logging
 
-import uk.gov.hmrc.customs.notification.logging.LoggingHelper2
+import uk.gov.hmrc.customs.notification.logging.LoggingHelper
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import util.RequestHeaders.{LoggingHeaders, LoggingHeadersMixedCase, LoggingHeadersWithAuth}
@@ -29,18 +29,18 @@ class LoggingHelperSpec2 extends UnitSpec {
   "LoggingHelper" should {
 
     "format" in {
-      val actual = LoggingHelper2.format(errorMsg, requestMetaData)
+      val actual = LoggingHelper.format(errorMsg, requestMetaData)
       actual shouldBe s"[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] $errorMsg"
     }
 
     "format Debug with URL" in {
-      val actual = LoggingHelper2.formatDebug(errorMsg, Some(url))(requestMetaData)
+      val actual = LoggingHelper.formatDebug(errorMsg, Some(url))(requestMetaData)
 
       actual shouldBe "[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] ERROR url=http://some-url\n"
     }
 
     "format Debug with URL and Payload" in {
-      val actual = LoggingHelper2.formatDebug(errorMsg, Some(url), Some("PAYLOAD"))(requestMetaData)
+      val actual = LoggingHelper.formatDebug(errorMsg, Some(url), Some("PAYLOAD"))(requestMetaData)
 
       actual shouldBe "[conversationId=eaca01f9-ec3b-4ede-b263-61b626dde231][fieldsId=eaca01f9-ec3b-4ede-b263-61b626dde232][badgeId=ABCDEF1234][eoriIdentifier=IAMEORI][correlationId=CORRID2234] ERROR url=http://some-url\n\npayload=\nPAYLOAD"
     }

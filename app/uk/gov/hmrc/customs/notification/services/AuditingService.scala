@@ -21,7 +21,7 @@ import javax.inject.Singleton
 import play.api.libs.json.{JsObject, JsString, JsValue}
 import uk.gov.hmrc.customs.api.common.config.ServicesConfig
 import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.play.audit.EventKeys.TransactionName
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
@@ -31,7 +31,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 @Singleton
-class AuditingService @Inject()(logger: NotificationLogger2, servicesConfig: ServicesConfig, auditConnector: AuditConnector) {
+class AuditingService @Inject()(logger: NotificationLogger, servicesConfig: ServicesConfig, auditConnector: AuditConnector) {
 
   private val appName = "customs-notification"
   private val transactionNameValue = "customs-declaration-outbound-call"

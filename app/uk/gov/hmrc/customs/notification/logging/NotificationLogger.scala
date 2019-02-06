@@ -19,9 +19,9 @@ package uk.gov.hmrc.customs.notification.logging
 import com.google.inject.Inject
 import javax.inject.Singleton
 import uk.gov.hmrc.customs.api.common.logging.CdsLogger
-import uk.gov.hmrc.customs.notification.logging.LoggingHelper.{formatDebug, formatError, formatInfo}
+import uk.gov.hmrc.customs.notification.domain.HasId
+import uk.gov.hmrc.customs.notification.logging.LoggingHelper.{format, formatDebug, formatWithHeaders}
 import uk.gov.hmrc.customs.notification.model.SeqOfHeader
-import uk.gov.hmrc.http.HeaderCarrier
 
 /*
 TODO: Logging framework needs to be refactored so that we pass in an implicit RequestMetaData/LoggingContext object down the call stack rather than SeqOfHeader
@@ -31,40 +31,38 @@ Current API is forcing us to create an implicit HeaderCarrier just so that we ca
 @Singleton
 class NotificationLogger @Inject()(logger: CdsLogger) {
 
-/*
-TODO: convert errorWithHeaders to accept Header rather than Seq[(String, String)]
-create StubNotificationLogger2
-more tests for new logger
-plug testing gaps
-raise PR
-TODO DONE
-TODO: recalculate usages
-check logging in connectors
-check references to NotificationLogger (8 and mainly connectors) and remove
-inline funky stuff
-check references for HeaderCarrier
-*/
+//  def debug(msg: => String): Unit = {
+//    logger.debug(msg)
+//  }
+  def debug(msg: => String)(implicit rm: HasId): Unit = {
+    logger.debug(format(msg, rm))
+  }
+  def debug(msg: => String, url: => String)(implicit rm: HasId): Unit = {
+    logger.debug(formatDebug(msg, Some(url)))
+  }
+  def debug(msg: => String, url: => String, payload: => String)(implicit rm: HasId): Unit = {
+    logger.debug(formatDebug(msg, Some(url), Some(payload)))
+  }
 
-  //DONE
-  // 1 usages only in NotificationLoggerSpec
-  def debug(msg: => String, url: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, Some(url), None))
-  // 1 usages only in NotificationLoggerSpec
-  def debug(msg: => String, url: => String, payload: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, Some(url), Some(payload)))
-  // 1 usages only in NotificationLoggerSpec.scala
-  def error(msg: => String, headers: => SeqOfHeader): Unit = logger.error(formatError(msg, headers))
-  // 1 usages in Tests
-  def debugWithoutRequestContext(s: => String): Unit = logger.debug(s)
-  // 1 only in Test
-  def error(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg))
-  // 1 in test
-  def error(msg: => String, t: => Throwable)(implicit hc: HeaderCarrier): Unit = logger.error(formatError(msg), t)
-  // 1 in test
-  def debug(msg: => String, headers: => SeqOfHeader): Unit = logger.debug(formatDebug(msg, headers))
-  // 1 usages only in tests
-  def debug(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.debug(formatDebug(msg, None, None))
-  // 1 usages FailedPushEmailPollingService.scala
-  def info(msg: => String)(implicit hc: HeaderCarrier): Unit = logger.info(formatInfo(msg))
+  @deprecated //TODO: inline headers processing
+  def debugWithHeaders(msg: => String, headers: => SeqOfHeader): Unit = logger.debug(formatWithHeaders(msg, headers))
 
+//  def debug(msg: => String, rm: RequestMetaData): Unit = logger.debug(formatDebug(msg, rm))
+  def info(msg: => String)(implicit rm: HasId): Unit = {
+    logger.info(format(msg, rm))
+  }
+  @deprecated //TODO: inline headers processsing
+  def errorWithHeaders(msg: => String, headers: => SeqOfHeader): Unit = logger.error(formatWithHeaders(msg, headers))
 
+  def error(msg: => String)(implicit rm: HasId): Unit = {
+    logger.error(format(msg, rm))
+  }
+//  def error(msg: => String, rm: RequestMetaData): Unit = logger.error(formatError(msg, rm))
+  def error(msg: => String, t: => Throwable)(implicit rm: HasId): Unit = {
+    logger.error(format(msg, rm), t)
+  }
+  def debugWithoutRequestContext(s: => String): Unit = {
+    logger.debug(s)
+  }
 }
 

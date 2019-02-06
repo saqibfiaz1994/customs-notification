@@ -26,7 +26,7 @@ import org.scalatest.mockito.MockitoSugar
 import play.api.test.Helpers.BAD_REQUEST
 import uk.gov.hmrc.customs.notification.connectors.CustomsNotificationMetricsConnector
 import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.services.config.ConfigService
 import uk.gov.hmrc.customs.notification.services.{DateTimeService, OutboundSwitchService, PushClientNotificationRetryService, RetryService}
 import uk.gov.hmrc.http.HttpResponse
@@ -40,9 +40,9 @@ import scala.language.postfixOps
 
 class PushClientNotificationRetryServiceSpec extends UnitSpec with MockitoSugar with Eventually with BeforeAndAfterEach {
 
-  private val mockLogger = mock[NotificationLogger2]
+  private val mockLogger = mock[NotificationLogger]
   private val mockOutboundSwitchService = mock[OutboundSwitchService]
-  private val notificationLogger = mock[NotificationLogger2]
+  private val notificationLogger = mock[NotificationLogger]
   private val mockCustomsNotificationsMetricsConnector = mock[CustomsNotificationMetricsConnector]
   private val mockDateTimeService = mock[DateTimeService]
   private val mockHttpResponse = mock[HttpResponse]

@@ -19,7 +19,7 @@ package uk.gov.hmrc.customs.notification.services
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.customs.notification.connectors.CustomsNotificationMetricsConnector
 import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.util.DateTimeHelpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,7 +28,7 @@ import scala.concurrent.Future
 @Singleton
 class PushClientNotificationRetryService @Inject()(retryService: RetryService,
                                                    outboundSwitchService: OutboundSwitchService,
-                                                   notificationLogger: NotificationLogger2,
+                                                   notificationLogger: NotificationLogger,
                                                    metricsConnector: CustomsNotificationMetricsConnector,
                                                    dateTimeService: DateTimeService) {
 

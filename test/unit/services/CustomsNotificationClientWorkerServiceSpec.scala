@@ -25,7 +25,7 @@ import org.scalatest.time.{Millis, Span}
 import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames._
 import uk.gov.hmrc.customs.notification.controllers.RequestMetaData
 import uk.gov.hmrc.customs.notification.domain._
-import uk.gov.hmrc.customs.notification.logging.NotificationLogger2
+import uk.gov.hmrc.customs.notification.logging.NotificationLogger
 import uk.gov.hmrc.customs.notification.repo.ClientNotificationRepo
 import uk.gov.hmrc.customs.notification.services.{CustomsNotificationClientWorkerService, NotificationDispatcher, PullClientNotificationService}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -47,7 +47,7 @@ class CustomsNotificationClientWorkerServiceSpec extends UnitSpec with MockitoSu
     X_CDS_CLIENT_ID_HEADER_NAME -> validFieldsId,
     X_CORRELATION_ID_HEADER_NAME -> correlationId))
 
-  private val mockNotificationLogger = mock[NotificationLogger2]
+  private val mockNotificationLogger = mock[NotificationLogger]
   private val requestMetaData = RequestMetaData(clientSubscriptionId, conversationId, Some(BadgeId(badgeIdValue)), Some(Eori(eoriNumber)), Some(CorrelationId(correlationId)), TimeReceivedZoned)
   private val mockClientNotificationRepo = mock[ClientNotificationRepo]
   private val mockNotificationDispatcher = mock[NotificationDispatcher]
