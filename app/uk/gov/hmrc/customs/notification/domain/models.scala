@@ -66,14 +66,16 @@ trait HasId {
 trait HasClientSubscriptionId {
   def clientSubscriptionId: ClientSubscriptionId
 }
+
 trait HasMaybeBadgeId {
   def mayBeBadgeId: Option[BadgeId]
 }
+
 trait HasMaybeEori {
   def mayBeEoriNumber: Option[Eori]
 }
+
 trait HasMaybeCorrelationId {
   def maybeCorrelationId: Option[CorrelationId]
 }
-
 

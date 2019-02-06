@@ -21,10 +21,6 @@ import uk.gov.hmrc.customs.notification.controllers.CustomHeaderNames
 import uk.gov.hmrc.customs.notification.domain._
 import uk.gov.hmrc.customs.notification.model.SeqOfHeader
 
-/*
-TODO: Logging framework needs to be refactored so that we pass in an implicit RequestMetaData/LoggingContext object down the call stack rather than SeqOfHeader
-RequestMetaData contains all the useful data we wish to log
-*/
 object LoggingHelper {
 
   private val headerOverwriteValue = "value-not-logged"
@@ -37,33 +33,11 @@ object LoggingHelper {
   def logMsgPrefix(clientNotification: ClientNotification): String =
     s"[conversationId=${clientNotification.notification.conversationId}][clientSubscriptionId=${clientNotification.csid}]"
 
-//  def formatError(msg: String)(rm: RequestMetaData): String = {
-//    formatInfo(msg)
-//  }
-
-//  def formatError(msg: String, rm: RequestMetaData): String = {
-//    s"${formatLogPrefix(rm)} $msg"
-//  }
-
-//  def formatInfo(msg: String)(implicit rm: RequestMetaData): String = {
-//    s"${formatLogPrefix(rm)} $msg"
-//  }
-
-//  def formatInfo(msg: String, rm: RequestMetaData): String = {
-//    s"${formatLogPrefix(rm)} $msg"
-//  }
-
-//  def formatDebug(msg: String, rm: RequestMetaData): String = {
-//    s"${formatLogPrefix(rm)} $msg"
-//  }
-
   def format(msg: String, rm: HasId): String = {
     s"${formatLogPrefix(rm)} $msg"
   }
 
-
   def formatDebug(msg: String, maybeUrl: Option[String] = None, maybePayload: Option[String] = None)(implicit rm: HasId): String = {
-//    val headers = hc.headers
     val urlPart = maybeUrl.fold("")(url => s" url=$url")
     val payloadPart = maybePayload.fold("")(payload => s"\npayload=\n$payload")
     s"${formatLogPrefix(rm)} $msg$urlPart\n$payloadPart"
@@ -79,8 +53,6 @@ object LoggingHelper {
     maybeConversationId.fold("")(conversationId => s"[conversationId=$conversationId]") +
       maybeFieldsId.fold("")(maybeFieldsId => s"[fieldsId=$maybeFieldsId]")
   }
-
-
 
   private def formatLogPrefix(rm: HasId): String = {
     def fieldsId = rm match {

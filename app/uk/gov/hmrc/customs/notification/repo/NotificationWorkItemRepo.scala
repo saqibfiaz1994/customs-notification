@@ -45,7 +45,6 @@ trait NotificationWorkItemRepo {
   def blockedCount(clientId: ClientId): Future[Int]
 }
 
-//TODO: use NotificationLogger2
 @Singleton
 class NotificationWorkItemMongoRepo @Inject()(mongoDbProvider: MongoDbProvider,
                                               clock: Clock,
